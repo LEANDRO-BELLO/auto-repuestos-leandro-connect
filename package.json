@@ -1,7 +1,7 @@
 {
   "name": "auto-repuestos-leandro-connect",
-  "version": "3.0.0-alpha.1",
-  "description": "Auto Repuestos Leandro Connect - Sistema comercial para gestión de lubricentro y mantenimiento preventivo.",
+  "version": "1.0.0",
+  "description": "Auto Repuestos Leandro Connect — Sistema comercial modular para lubricentro y mantenimiento preventivo.",
   "main": "src/main/main.js",
   "author": "Auto Repuestos Leandro S.A.",
   "license": "UNLICENSED",
@@ -11,10 +11,8 @@
     "init-db": "node src/database/init-db.js"
   },
   "dependencies": {
-    "@electron/remote": "latest",
-    "electron": "latest",
-    "qrcode": "latest",
-    "sqlite3": "latest"
+    "electron": "^35.0.0",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {}
 }

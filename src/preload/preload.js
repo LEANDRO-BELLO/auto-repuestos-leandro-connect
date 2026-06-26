@@ -1,10 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('api', {
-  login: (data) => ipcRenderer.invoke('login', data),
+const api = {
+  login: (credentials) => ipcRenderer.invoke('auth:login', credentials),
   getEmpresa: () => ipcRenderer.invoke('empresa:get'),
-  listClientes: (query) => ipcRenderer.invoke('clientes:list', query),
-  createCliente: (cliente) => ipcRenderer.invoke('clientes:create', cliente),
-  listVehiculos: (query) => ipcRenderer.invoke('vehiculos:list', query),
-  createVehiculo: (vehiculo) => ipcRenderer.invoke('vehiculos:create', vehiculo)
-});
+  getVersion: () => ipcRenderer.invoke('app:getVersion')
+};
+
+contextBridge.exposeInMainWorld('api', api);
