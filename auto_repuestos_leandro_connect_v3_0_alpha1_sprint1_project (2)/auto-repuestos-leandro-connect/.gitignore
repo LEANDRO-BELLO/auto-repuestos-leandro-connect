@@ -1,6 +1,0 @@
-node_modules/
-dist/
-build/
-data/*.db
-.DS_Store
-*.log
