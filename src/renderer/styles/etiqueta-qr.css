@@ -1,0 +1,110 @@
+/* Etiqueta QR — modelo aprovado v1.0 */
+
+.etiqueta-template-fixed {
+  position: relative;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.etiqueta-template-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+display: block;
+image-rendering: pixelated;
+  z-index: 1;
+}
+
+
+.etiqueta-footer-whatsapp,
+.etiqueta-footer-email,
+.etiqueta-footer-ubicacion,
+.etiqueta-qr-dinamico {
+  position: absolute;
+  z-index: 2;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.etiqueta-dado.veiculo {
+  left: 37%;
+  top: 43%;
+  width: 28%;
+  font-size: 3.4mm;
+  text-align: center;
+}
+
+.etiqueta-dado.chapa {
+  left: 37%;
+  top: 56%;
+  width: 28%;
+  font-size: 3.4mm;
+  text-align: center;
+}
+
+.etiqueta-dado.motor {
+  left: 37%;
+  top: 69%;
+  width: 28%;
+  font-size: 3.4mm;
+  text-align: center;
+}
+
+
+.etiqueta-qr-dinamico {
+  position: absolute;
+  left: 43%;
+  top: 7%;
+  width: 60%;
+  height: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.etiqueta-qr-dinamico img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.etiqueta-dado {
+  position: absolute;
+  z-index: 10;
+  width: 28%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #fff;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-weight: 900;
+  font-size: 4mm;
+  white-space: nowrap;
+}
+
+.etiqueta-dado.veiculo{
+    left:18%;
+    top:43.5%;
+}
+
+.etiqueta-dado.chapa{
+    left:18%;
+    top:59%;
+}
+
+.etiqueta-dado.motor{
+    left:18%;
+    top:74%;
+}
+
+.etiqueta-footer-whatsapp,
+.etiqueta-footer-email,
+.etiqueta-footer-ubicacion {
+  display: none !important;
+}

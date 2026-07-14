@@ -1,0 +1,318 @@
+/* ── Clientes module ──────────────────────────────────────── */
+
+.clientes-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 100%;
+}
+
+.clientes-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.clientes-btn-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0 !important;
+  padding: 11px 18px !important;
+}
+
+.clientes-btn-new svg {
+  width: 16px;
+  height: 16px;
+}
+
+.clientes-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 360px;
+  padding: 0 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.clientes-search:focus-within {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-gold-soft);
+}
+
+.clientes-search svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.clientes-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  outline: none;
+}
+
+.clientes-search input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.clientes-panel {
+  flex: 1;
+}
+
+.clientes-panel__body {
+  max-height: calc(100vh - 280px);
+  overflow: auto;
+}
+
+.clientes-codigo {
+  font-weight: 600;
+  color: var(--color-gold);
+  font-size: 0.8125rem;
+}
+
+.clientes-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.clientes-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+  white-space: nowrap;
+}
+
+.clientes-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.clientes-action-btn--edit:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  background: var(--color-gold-soft);
+}
+
+.clientes-action-btn--delete:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+/* ── Modal ────────────────────────────────────────────────── */
+
+.clientes-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.clientes-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+}
+
+.clientes-modal__dialog {
+  position: relative;
+  width: min(100%, 560px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.clientes-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+}
+
+.clientes-modal__header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-gold);
+}
+
+.clientes-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.clientes-modal__close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.clientes-modal__close:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.clientes-form {
+  padding: 24px;
+}
+
+.clientes-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.clientes-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clientes-form__field--full {
+  grid-column: 1 / -1;
+}
+
+.clientes-form__field label {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.clientes-required {
+  color: var(--color-gold);
+}
+
+.clientes-form__field input,
+.clientes-form__field textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  resize: vertical;
+}
+
+.clientes-form__field input:focus,
+.clientes-form__field textarea:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-gold-soft);
+}
+
+.clientes-form__error {
+  min-height: 1.25rem;
+  margin: 12px 0 0;
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+.clientes-form__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.clientes-form__footer .btn-primary {
+  margin-top: 0;
+}
+
+/* ── Shell placeholder ────────────────────────────────────── */
+
+.shell-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 40px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.shell-placeholder strong {
+  color: var(--color-gold);
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .clientes-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .clientes-search {
+    max-width: none;
+  }
+
+  .clientes-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .clientes-form__field--full {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .clientes-table th:nth-child(4),
+  .clientes-table td:nth-child(4),
+  .clientes-table th:nth-child(5),
+  .clientes-table td:nth-child(5) {
+    display: none;
+  }
+
+  .clientes-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

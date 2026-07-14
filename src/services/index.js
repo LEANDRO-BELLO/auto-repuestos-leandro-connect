@@ -1,7 +1,19 @@
 const authService = require('./auth.service');
 const empresaService = require('./empresa.service');
+const clientesService = require('./clientes.service');
+const vehiculosService = require('./vehiculos.service');
+const ordenesService = require('./ordenes.service');
+const serviciosRealizadosService = require('./servicios-realizados.service');
+const proximosServiciosService = require('./proximos-servicios.service');
+const configEtiquetaService = require('./config-etiqueta.service');
 
 module.exports = {
   authService,
-  empresaService
+  empresaService,
+  clientesService,
+  vehiculosService,
+  ordenesService,
+  serviciosRealizadosService,
+  proximosServiciosService,
+  configEtiquetaService
 };

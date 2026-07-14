@@ -3,8 +3,20 @@ const path = require('path');
 const { ensureDataDir, getDatabase, closeDatabase, get, run } = require('./connection');
 const logger = require('../utils/logger');
 
-const SCHEMA_VERSION = 1;
-const schemaPath = path.join(__dirname, 'schema', '001-inicial.sql');
+const SCHEMA_VERSION = 10;
+
+const MIGRATIONS = [
+  { version: 1, file: '001-inicial.sql', seed: true },
+  { version: 2, file: '002-clientes.sql', seed: false },
+  { version: 3, file: '003-vehiculos.sql', seed: false },
+  { version: 4, file: '004-ordenes.sql', seed: false },
+  { version: 5, file: '005-ordenes-servicios.sql', seed: false },
+  { version: 6, file: '006-ordenes-campos.sql', seed: false },
+  { version: 7, file: '007-ordenes-servicios-km.sql', seed: false },
+  { version: 8, file: '008-ordenes-factura.sql', seed: false },
+  { version: 9, file: '009-config-etiqueta-qr.sql', seed: false },
+  { version: 10, file: '010-vehiculos-qr.sql', seed: false }
+];
 
 async function seedInitialData() {
   await run(
@@ -26,7 +38,8 @@ async function seedInitialData() {
   );
 }
 
-async function applySchema() {
+async function applySchemaFile(filename) {
+  const schemaPath = path.join(__dirname, 'schema', filename);
   const schemaSql = fs.readFileSync(schemaPath, 'utf8');
   const statements = schemaSql
     .split(';')
@@ -54,17 +67,27 @@ async function initializeDatabase() {
   ensureDataDir();
   getDatabase();
 
-  const currentVersion = await getCurrentSchemaVersion();
+  const currentVersion = (await getCurrentSchemaVersion())?.version ?? 0;
 
-  if (currentVersion?.version >= SCHEMA_VERSION) {
+  if (currentVersion >= SCHEMA_VERSION) {
     logger.info('Base de datos ya inicializada.');
     return;
   }
 
-  logger.info('Inicializando base de datos SQLite...');
-  await applySchema();
-  await run('INSERT OR IGNORE INTO schema_version (version) VALUES (?)', [SCHEMA_VERSION]);
-  await seedInitialData();
+  for (const migration of MIGRATIONS) {
+    if (migration.version <= currentVersion) {
+      continue;
+    }
+
+    logger.info(`Aplicando migración v${migration.version}...`);
+    await applySchemaFile(migration.file);
+    await run('INSERT OR IGNORE INTO schema_version (version) VALUES (?)', [migration.version]);
+
+    if (migration.seed) {
+      await seedInitialData();
+    }
+  }
+
   logger.info('Base de datos inicializada correctamente.');
 }
 

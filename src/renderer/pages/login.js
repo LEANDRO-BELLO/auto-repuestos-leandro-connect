@@ -1,4 +1,5 @@
 import { escapeHtml } from '../utils/dom.js';
+import { renderAppShell } from './shell.js';
 
 export function renderLoginPage({ onSubmit }) {
   const root = document.getElementById('app-root');
@@ -82,7 +83,7 @@ export function renderLoginPage({ onSubmit }) {
   });
 }
 
-export function renderShellPage({ user, empresa, onLogout }) {
+export function renderLegacyWelcomePage({ user, empresa, onLogout }) {
   const root = document.getElementById('app-root');
 
   root.innerHTML = `
@@ -111,4 +112,8 @@ export function renderShellPage({ user, empresa, onLogout }) {
   `;
 
   root.querySelector('#logout-button').addEventListener('click', onLogout);
+}
+
+export function renderShellPage({ user, empresa, onLogout, page = 'inicio' }) {
+  renderAppShell({ user, empresa, onLogout, page });
 }

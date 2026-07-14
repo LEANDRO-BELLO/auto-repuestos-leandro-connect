@@ -3,6 +3,7 @@ dist/
 build/
 out/
 data/
+.electron-user-data/
 .DS_Store
 Thumbs.db
 *.log

@@ -8,11 +8,13 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "init-db": "node src/database/init-db.js"
+    "init-db": "node src/database/init-db.js",
+    "sync-railway": "node scripts/sync-railway.js"
   },
   "dependencies": {
     "electron": "^35.0.0",
+    "jspdf": "^2.5.2",
+    "qrcode": "^1.5.4",
     "sqlite3": "^5.1.7"
-  },
-  "devDependencies": {}
+  }
 }
