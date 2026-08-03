@@ -1,6 +1,6 @@
 const { get, run } = require('../database/connection');
 
-const TAMANOS_VALIDOS = new Set(['10x7', '12x8', '8x5']);
+const TAMANOS_VALIDOS = new Set(['9x6', '10x7', '12x8', '8x5']);
 
 const TEXTO_ETIQUETA_DEFAULT =
   'ESCANEA ESTE CÓDIGO y accede al historial completo de mantenimiento de tu vehículo.';
@@ -11,7 +11,7 @@ function mapConfig(row) {
   }
 
   return {
-    tamanoEtiqueta: row.tamano_etiqueta || '10x7',
+    tamanoEtiqueta: row.tamano_etiqueta || '9x6',
     telefonoWhatsapp: row.telefono_whatsapp || '',
     telefonoAlternativo: row.telefono_alternativo || '',
     email: row.email || '',
@@ -37,7 +37,7 @@ async function ensureDefaultConfig() {
        email, email_alternativo, direccion_ubicacion, texto_etiqueta
      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      '10x7',
+      '9x6',
       empresa?.whatsapp || empresa?.telefono || '+595 986 773 222',
       empresa?.telefono || '',
       empresa?.email || 'autorepuestosleandrosa@hotmail.com',
@@ -59,7 +59,7 @@ async function updateConfigEtiqueta(data = {}) {
 
   const tamanoEtiqueta = TAMANOS_VALIDOS.has(data.tamanoEtiqueta)
     ? data.tamanoEtiqueta
-    : '10x7';
+    : '9x6';
 
   const textoEtiqueta = data.textoEtiqueta?.trim() || TEXTO_ETIQUETA_DEFAULT;
 

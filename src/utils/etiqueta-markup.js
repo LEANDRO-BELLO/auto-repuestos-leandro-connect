@@ -70,7 +70,7 @@ function buildInfoBlock(icon, label, value) {
   `;
 }
 
-function buildEtiquetaMarkup({ config, vehiculo, qrDataUrl = null, tamano = '10x7', logoSrc }) {
+function buildEtiquetaMarkup({ config, vehiculo, qrDataUrl = null, tamano = '9x6', logoSrc }) {
   const contact = buildContactLines(config);
 
     return `

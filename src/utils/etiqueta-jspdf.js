@@ -1,4 +1,5 @@
 const { buildEtiquetaDocumentHtml } = require('./etiqueta-template');
+const fs = require('fs');
 const path = require('path');
 const { jsPDF } = require('jspdf');
 const { getEtiquetaLayout } = require('./etiqueta-layout');
@@ -45,7 +46,7 @@ function readLogoAspectRatio() {
   return 1;
 }
 
-function createEtiquetaPdfDocument(tamano = '10x7') {
+function createEtiquetaPdfDocument(tamano = '9x6') {
   const { page } = getEtiquetaLayout(tamano);
 
   return new jsPDF({
@@ -174,7 +175,7 @@ function drawLogo(doc, x, y, maxWidth, maxHeight, logoDataUrl, layout) {
   return y + drawH;
 }
 
-function buildEtiquetaPdfBuffer({ config, vehiculo, qrDataUrl, tamano = '10x7' }) {
+function buildEtiquetaPdfBuffer({ config, vehiculo, qrDataUrl, tamano = '9x6' }) {
   const layout = getEtiquetaLayout(tamano);
   const spec = layout.spec;
   const { page, pad, footerH, bodyH, leftW, rightW, leftX, rightX, bodyY } = (() => {

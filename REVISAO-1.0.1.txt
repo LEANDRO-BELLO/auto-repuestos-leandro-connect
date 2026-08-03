@@ -1,0 +1,22 @@
+AUTO REPUESTOS LEANDRO CONNECT — REVISÃO 1.0.1
+
+Implementado nesta etapa:
+- Fila persistente de sincronização para ordens finalizadas.
+- Ordens feitas sem internet permanecem disponíveis no SQLite local.
+- Tentativa automática ao iniciar o aplicativo e a cada 30 segundos.
+- Antes de enviar a ordem, sincroniza cliente e veículo.
+- Estado de sincronização gravado no banco: pendiente, sincronizando, sincronizada ou error.
+- Novos canais IPC para consultar estado e forçar nova tentativa.
+- PDF local com logo oficial incorporado e rótulos Próximo servicio / Vencimiento.
+
+Teste recomendado:
+1. Iniciar com internet desligada.
+2. Finalizar uma ordem.
+3. Confirmar que aparece em Servicios Realizados e que o PDF abre.
+4. Fechar e abrir o aplicativo ainda offline.
+5. Ligar a internet e aguardar até 30 segundos.
+6. Escanear o QR e confirmar que a ordem aparece no portal.
+
+Observação:
+O código-fonte do servidor Railway/portal QR não está incluído neste ZIP. Portanto,
+o layout remoto do PDF do portal não pode ser substituído apenas pelo aplicativo Electron.

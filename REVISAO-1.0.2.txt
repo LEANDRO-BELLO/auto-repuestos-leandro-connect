@@ -1,0 +1,12 @@
+AUTO REPUESTOS LEANDRO CONNECT — REVISÃO 1.0.2
+
+CORRIGIDO
+- Mantida a sincronização automática das ordens feitas offline.
+- Restaurado o agendamento para cliente não cadastrado.
+- Restaurado o agendamento para veículo não cadastrado.
+- O campo Cliente não é mais obrigatório quando “Cliente no registrado” está marcado.
+- Nome e telefone do cliente livre são gravados no banco local.
+- Migração 015 adicionada sem substituir a migração 014 da sincronização offline.
+
+PDF DO PORTAL QR
+O PDF aberto pelo celular é gerado no servidor publicado no Railway. O código desse servidor não faz parte deste ZIP desktop; por isso esta revisão não pode substituir o modelo remoto. Para unificar de verdade, será necessário atualizar o projeto/serviço publicado no Railway.

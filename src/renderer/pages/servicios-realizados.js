@@ -19,6 +19,8 @@ const SERVICIOS_CATALOGO = [
   { id: 'aceite_dif_tras', label: 'Cambio de aceite diferencial trasero' },
   { id: 'fluido_radiador', label: 'Cambio de fluido de radiador' },
   { id: 'fluido_freno', label: 'Cambio de fluido de freno' },
+  { id: 'pastilla_freno_delantera', label: 'Cambio de pastilla de freno delantera' },
+  { id: 'pastilla_freno_trasera', label: 'Cambio de pastilla de freno trasera' },
   { id: 'engrase_crucetas', label: 'Engrase de crucetas' },
   { id: 'filtro_caja_automatica', label: 'Filtro caja automática' }
 ];

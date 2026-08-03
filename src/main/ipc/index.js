@@ -1,5 +1,5 @@
 const { ipcMain } = require('electron');
-const { authService, empresaService, clientesService, vehiculosService, ordenesService, serviciosRealizadosService, proximosServiciosService, configEtiquetaService } = require('../../services');
+const { authService, empresaService, clientesService, vehiculosService, ordenesService, serviciosRealizadosService, proximosServiciosService, configEtiquetaService, agendamientosService, dashboardService } = require('../../services');
 const logger = require('../../utils/logger');
 
 function registerIpcHandlers() {
@@ -223,6 +223,51 @@ function registerIpcHandlers() {
       logger.error('Error en proximosServicios:list', error);
       return { items: [], total: 0 };
     }
+  });
+
+
+
+  ipcMain.handle('dashboard:get', async () => {
+    try {
+      return await dashboardService.getDashboard();
+    } catch (error) {
+      logger.error('Error en dashboard:get', error);
+      return { agendamientos: [], servicios: [] };
+    }
+  });
+
+  ipcMain.handle('dashboard:marcarAvisado', async (_event, itemId) => {
+    try {
+      return await dashboardService.marcarAvisado(itemId);
+    } catch (error) {
+      logger.error('Error en dashboard:marcarAvisado', error);
+      return { ok: false, error: 'No se pudo registrar el aviso.' };
+    }
+  });
+
+  ipcMain.handle('agendamientos:list', async (_event, filters) => {
+    try { return await agendamientosService.listAgendamientos(filters); }
+    catch (error) { logger.error('Error en agendamientos:list', error); return []; }
+  });
+  ipcMain.handle('agendamientos:get', async (_event, id) => {
+    try { return await agendamientosService.getAgendamiento(id); }
+    catch (error) { logger.error('Error en agendamientos:get', error); return null; }
+  });
+  ipcMain.handle('agendamientos:create', async (_event, data) => {
+    try { return await agendamientosService.createAgendamiento(data); }
+    catch (error) { logger.error('Error en agendamientos:create', error); return { ok: false, error: 'No se pudo guardar.' }; }
+  });
+  ipcMain.handle('agendamientos:update', async (_event, id, data) => {
+    try { return await agendamientosService.updateAgendamiento(id, data); }
+    catch (error) { logger.error('Error en agendamientos:update', error); return { ok: false, error: 'No se pudo actualizar.' }; }
+  });
+  ipcMain.handle('agendamientos:setEstado', async (_event, id, estado) => {
+    try { return await agendamientosService.setEstadoAgendamiento(id, estado); }
+    catch (error) { logger.error('Error en agendamientos:setEstado', error); return { ok: false, error: 'No se pudo cambiar el estado.' }; }
+  });
+  ipcMain.handle('agendamientos:delete', async (_event, id) => {
+    try { return await agendamientosService.deleteAgendamiento(id); }
+    catch (error) { logger.error('Error en agendamientos:delete', error); return { ok: false, error: 'No se pudo eliminar.' }; }
   });
 
   ipcMain.handle('configEtiqueta:get', async () => {

@@ -3,7 +3,7 @@ const path = require('path');
 const { ensureDataDir, getDatabase, closeDatabase, get, run } = require('./connection');
 const logger = require('../utils/logger');
 
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 15;
 
 const MIGRATIONS = [
   { version: 1, file: '001-inicial.sql', seed: true },
@@ -15,7 +15,12 @@ const MIGRATIONS = [
   { version: 7, file: '007-ordenes-servicios-km.sql', seed: false },
   { version: 8, file: '008-ordenes-factura.sql', seed: false },
   { version: 9, file: '009-config-etiqueta-qr.sql', seed: false },
-  { version: 10, file: '010-vehiculos-qr.sql', seed: false }
+  { version: 10, file: '010-vehiculos-qr.sql', seed: false },
+  { version: 11, file: '011-agendamientos-dashboard.sql', seed: false },
+  { version: 12, file: '012-agendamientos-integracion.sql', seed: false },
+  { version: 13, file: '013-etiqueta-9x6.sql', seed: false },
+  { version: 14, file: '014-agendamientos-cliente-libre.sql', seed: false },
+  { version: 15, file: '015-agendamientos-cliente-libre.sql', seed: false }
 ];
 
 async function seedInitialData() {

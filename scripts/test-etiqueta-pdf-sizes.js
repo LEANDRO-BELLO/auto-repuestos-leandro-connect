@@ -6,7 +6,7 @@ const { parsePdfMediaBoxMm } = require('../src/main/etiqueta-pdf');
 const { ETIQUETA_PAGE_SIZES } = require('../src/utils/etiqueta-page-sizes');
 const { createQrDataUrl } = require('../src/utils/qr-code');
 
-const SIZES = ['10x7', '12x8', '8x5'];
+const SIZES = ['9x6', '10x7', '12x8', '8x5'];
 
 const demoConfig = {
   telefonoWhatsapp: '+595 986 773 222',

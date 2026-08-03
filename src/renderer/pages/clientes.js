@@ -5,14 +5,10 @@ let searchTimeout = null;
 let editingId = null;
 
 function formatUltimaVisita(value) {
-  if (!value) {
-    return '—';
-  }
+  if (!value) return '—';
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return escapeHtml(value);
-  }
+  if (Number.isNaN(date.getTime())) return escapeHtml(value);
 
   return new Intl.DateTimeFormat('es-PY', {
     day: '2-digit',
@@ -73,37 +69,30 @@ function renderFormModal(isEdit = false) {
               <label for="cliente-nombre">Nombre <span class="clientes-required">*</span></label>
               <input id="cliente-nombre" name="nombre" type="text" placeholder="Nombre completo" required />
             </div>
-
             <div class="clientes-form__field">
               <label for="cliente-documento">Documento (CI/RUC)</label>
               <input id="cliente-documento" name="documento" type="text" placeholder="Ej: 4.567.890" />
             </div>
-
             <div class="clientes-form__field">
               <label for="cliente-telefono">Teléfono</label>
               <input id="cliente-telefono" name="telefono" type="tel" placeholder="+595 9XX XXX XXX" />
             </div>
-
             <div class="clientes-form__field">
               <label for="cliente-whatsapp">WhatsApp</label>
               <input id="cliente-whatsapp" name="whatsapp" type="tel" placeholder="+595 9XX XXX XXX" />
             </div>
-
             <div class="clientes-form__field">
               <label for="cliente-email">Correo electrónico</label>
               <input id="cliente-email" name="email" type="email" placeholder="correo@ejemplo.com" />
             </div>
-
             <div class="clientes-form__field clientes-form__field--full">
               <label for="cliente-direccion">Dirección</label>
               <input id="cliente-direccion" name="direccion" type="text" placeholder="Dirección completa" />
             </div>
-
             <div class="clientes-form__field">
               <label for="cliente-ciudad">Ciudad</label>
               <input id="cliente-ciudad" name="ciudad" type="text" placeholder="Ej: Katueté" />
             </div>
-
             <div class="clientes-form__field clientes-form__field--full">
               <label for="cliente-observaciones">Observaciones</label>
               <textarea id="cliente-observaciones" name="observaciones" rows="3" placeholder="Notas adicionales"></textarea>
@@ -130,15 +119,9 @@ function renderPageHtml() {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           Nuevo Cliente
         </button>
-
         <div class="clientes-search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <input
-            type="search"
-            id="clientes-search"
-            placeholder="Buscar cliente..."
-            autocomplete="off"
-          />
+          <input type="search" id="clientes-search" placeholder="Buscar cliente..." autocomplete="off" />
         </div>
       </div>
 
@@ -169,21 +152,20 @@ function renderPageHtml() {
 
 async function loadClientes(search = '') {
   const tbody = pageRoot?.querySelector('#clientes-table-body');
-  if (!tbody) {
-    return;
-  }
+  if (!tbody) return;
 
-  const clientes = await window.api.listClientes(search);
-  tbody.innerHTML = renderTableRows(clientes);
+  try {
+    const clientes = await window.api.listClientes(search);
+    tbody.innerHTML = renderTableRows(clientes);
+  } catch (error) {
+    console.error('No se pudieron cargar los clientes:', error);
+    tbody.innerHTML = '<tr><td class="dashboard-table__empty" colspan="8">No se pudieron cargar los clientes.</td></tr>';
+  }
 }
 
 function openModal(cliente = null) {
   editingId = cliente?.id ?? null;
-  const existing = pageRoot.querySelector('#clientes-modal');
-  if (existing) {
-    existing.remove();
-  }
-
+  pageRoot.querySelector('#clientes-modal')?.remove();
   pageRoot.insertAdjacentHTML('beforeend', renderFormModal(Boolean(cliente)));
 
   const modal = pageRoot.querySelector('#clientes-modal');
@@ -201,11 +183,9 @@ function openModal(cliente = null) {
   }
 
   form.nombre.focus();
-
-  modal.querySelectorAll('[data-action="close-modal"]').forEach((el) => {
-    el.addEventListener('click', closeModal);
+  modal.querySelectorAll('[data-action="close-modal"]').forEach((element) => {
+    element.addEventListener('click', closeModal);
   });
-
   form.addEventListener('submit', handleFormSubmit);
 }
 
@@ -222,7 +202,6 @@ async function handleFormSubmit(event) {
   const submitBtn = pageRoot.querySelector('#clientes-form-submit');
 
   errorBox.textContent = '';
-
   const data = {
     nombre: form.nombre.value,
     documento: form.documento.value,
@@ -250,6 +229,9 @@ async function handleFormSubmit(event) {
     closeModal();
     const search = pageRoot.querySelector('#clientes-search')?.value || '';
     await loadClientes(search);
+  } catch (error) {
+    console.error('No se pudo guardar el cliente:', error);
+    errorBox.textContent = 'No se pudo guardar el cliente.';
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Guardar';
@@ -257,52 +239,51 @@ async function handleFormSubmit(event) {
 }
 
 async function handleEdit(id) {
-  const cliente = await window.api.getCliente(id);
-
-  if (!cliente) {
-    window.alert('Cliente no encontrado.');
-    return;
+  try {
+    const cliente = await window.api.getCliente(id);
+    if (!cliente) {
+      window.alert('Cliente no encontrado.');
+      return;
+    }
+    openModal(cliente);
+  } catch (error) {
+    console.error('No se pudo abrir el cliente:', error);
+    window.alert('No se pudo abrir el cliente.');
   }
-
-  openModal(cliente);
 }
 
 async function handleDelete(id) {
-  const cliente = await window.api.getCliente(id);
+  try {
+    const cliente = await window.api.getCliente(id);
+    if (!cliente) {
+      window.alert('Cliente no encontrado.');
+      return;
+    }
 
-  if (!cliente) {
-    window.alert('Cliente no encontrado.');
-    return;
+    const confirmed = window.confirm(
+      `¿Eliminar al cliente "${cliente.nombre}" (${cliente.codigo})?\n\nEsta acción no se puede deshacer.`
+    );
+    if (!confirmed) return;
+
+    const result = await window.api.deleteCliente(id);
+    if (!result.ok) {
+      window.alert(result.error || 'No se pudo eliminar el cliente.');
+      return;
+    }
+
+    const search = pageRoot.querySelector('#clientes-search')?.value || '';
+    await loadClientes(search);
+  } catch (error) {
+    console.error('No se pudo eliminar el cliente:', error);
+    window.alert('No se pudo eliminar el cliente.');
   }
-
-  const confirmed = window.confirm(
-    `¿Eliminar al cliente "${cliente.nombre}" (${cliente.codigo})?\n\nEsta acción no se puede deshacer.`
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  const result = await window.api.deleteCliente(id);
-
-  if (!result.ok) {
-    window.alert(result.error || 'No se pudo eliminar el cliente.');
-    return;
-  }
-
-  const search =
-    pageRoot.querySelector('#clientes-search')?.value || '';
-
-  await loadClientes(search);
 }
 
 function handleTableClick(event) {
-  const btn = event.target.closest('[data-action]');
-  if (!btn || !pageRoot?.contains(btn)) {
-    return;
-  }
+  const button = event.target.closest('[data-action]');
+  if (!button || !pageRoot?.contains(button)) return;
 
-  const { action, id } = btn.dataset;
+  const { action, id } = button.dataset;
   if (action === 'edit' && id) {
     handleEdit(Number(id));
   } else if (action === 'delete' && id) {
@@ -319,11 +300,9 @@ function handleSearchInput(event) {
 export async function mountClientesPage(container) {
   pageRoot = container;
   container.innerHTML = renderPageHtml();
-
   container.querySelector('#clientes-btn-new').addEventListener('click', () => openModal());
   container.querySelector('#clientes-search').addEventListener('input', handleSearchInput);
   container.addEventListener('click', handleTableClick);
-
   await loadClientes();
 }
 

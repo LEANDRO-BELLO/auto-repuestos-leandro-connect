@@ -13,6 +13,8 @@ let vehiculoSearchResults = [];
 let selectedServicios = [];
 let selectedServiciosKm = {};
 let currentOrden = null;
+let currentAgendamientoId = null;
+let currentAgendamiento = null;
 
 const SERVICIOS_CON_KM = new Set([
   'aceite_caja_cambio',
@@ -36,6 +38,8 @@ const SERVICIOS_CATALOGO = [
   { id: 'aceite_dif_tras', label: 'Cambio de aceite diferencial trasero' },
   { id: 'fluido_radiador', label: 'Cambio de fluido de radiador' },
   { id: 'fluido_freno', label: 'Cambio de fluido de freno' },
+  { id: 'pastilla_freno_delantera', label: 'Cambio de pastilla de freno delantera' },
+  { id: 'pastilla_freno_trasera', label: 'Cambio de pastilla de freno trasera' },
   { id: 'engrase_crucetas', label: 'Engrase de crucetas' },
   { id: 'filtro_caja_automatica', label: 'Filtro caja automática' }
 ];
@@ -318,8 +322,19 @@ function renderFormModal() {
             </div>
           </fieldset>
 
+          ${currentAgendamiento ? `
+          <div class="ordenes-agenda-origin">
+            <strong>Orden iniciada desde Agendamiento</strong>
+            <span>${escapeHtml(currentAgendamiento.clienteNombre || '')} · ${escapeHtml(currentAgendamiento.vehiculo_id ? ([currentAgendamiento.marca, currentAgendamiento.modelo].filter(Boolean).join(' ')) : (currentAgendamiento.vehiculo_descripcion || 'Vehículo sin registrar'))}</span>
+            ${!currentAgendamiento.vehiculo_id ? '<small>Antes de guardar la OT, seleccione un vehículo ya registrado para este cliente.</small>' : ''}
+          </div>` : ''}
+
           <fieldset class="ordenes-form__section">
             <div class="ordenes-form__grid">
+              <div class="ordenes-form__field ordenes-form__field--full">
+                <label for="orden-observaciones">Observaciones</label>
+                <textarea id="orden-observaciones" name="observaciones" rows="3" ${readonly}></textarea>
+              </div>
               <div class="ordenes-form__field">
                 <label for="orden-km-actual">KM actual</label>
                 <input id="orden-km-actual" name="kilometraje" type="number" min="0" placeholder="0" ${readonly} />
@@ -686,6 +701,8 @@ function buildOrdenData(form, { finalize = false, numeroFactura = null } = {}) {
     proximoKm: form.proximoKm.value,
     fechaVencimiento: form.fechaVencimiento.value,
     estado: finalize ? 'Finalizada' : form.estado.value,
+    observaciones: form.observaciones?.value || '',
+    agendamientoId: currentAgendamientoId,
     servicios: collectServicios(form)
   };
 
@@ -1031,7 +1048,7 @@ function openModal(orden = null, mode = 'create') {
         modelo: orden.vehiculoModelo,
         kilometraje: orden.kilometraje
       }
-    : null;
+    : (currentAgendamiento ? selectedVehiculo : null);
 
   selectedServicios = orden?.servicios ? [...orden.servicios] : [];
   selectedServiciosKm = orden?.serviciosKm ? { ...orden.serviciosKm } : {};
@@ -1047,6 +1064,9 @@ function openModal(orden = null, mode = 'create') {
     form.proximoKm.value = orden.proximoKm ?? '';
     form.fechaVencimiento.value = orden.fechaVencimiento || '';
     form.estado.value = orden.estado || 'Abierta';
+    if (form.observaciones) form.observaciones.value = orden.observaciones || '';
+  } else if (currentAgendamiento && form.observaciones) {
+    form.observaciones.value = currentAgendamiento.observaciones || '';
   }
 
   updateVehiculoSelectedUI();
@@ -1068,6 +1088,8 @@ function closeModal() {
   editingId = null;
   modalMode = 'create';
   currentOrden = null;
+  currentAgendamientoId = null;
+  currentAgendamiento = null;
   selectedVehiculo = null;
   vehiculoSearchResults = [];
   selectedServicios = [];
@@ -1136,7 +1158,7 @@ function handleSearchInput(event) {
   searchTimeout = setTimeout(() => loadOrdenes(event.target.value), 300);
 }
 
-export async function mountOrdenesPage(container) {
+export async function mountOrdenesPage(container, options = {}) {
   pageRoot = container;
   container.innerHTML = renderPageHtml();
 
@@ -1145,6 +1167,33 @@ export async function mountOrdenesPage(container) {
   container.addEventListener('click', handleTableClick);
 
   await loadOrdenes();
+
+  if (options.agendamientoId) {
+    currentAgendamientoId = Number(options.agendamientoId);
+    currentAgendamiento = await window.api.getAgendamiento(currentAgendamientoId);
+
+    if (currentAgendamiento?.orden_id) {
+      const existing = await window.api.getOrden(currentAgendamiento.orden_id);
+      if (existing) { openModal(existing, existing.estado === 'Finalizada' ? 'view' : 'edit'); return; }
+    }
+
+    if (currentAgendamiento?.vehiculo_id) {
+      const items = await window.api.listVehiculosByCliente(currentAgendamiento.cliente_id);
+      selectedVehiculo = items.find((v) => v.id === currentAgendamiento.vehiculo_id) || null;
+      if (selectedVehiculo) {
+        selectedVehiculo.clienteNombre = currentAgendamiento.clienteNombre;
+        selectedVehiculo.clienteCodigo = selectedVehiculo.clienteCodigo || '';
+        vehiculoSearchResults = [selectedVehiculo];
+      }
+    }
+
+    openModal();
+    const searchInput = pageRoot.querySelector('#orden-buscar');
+    if (!currentAgendamiento?.vehiculo_id && searchInput) {
+      searchInput.value = currentAgendamiento?.clienteNombre || '';
+      await searchVehiculosUnified(searchInput.value);
+    }
+  }
 }
 
 export function unmountOrdenesPage() {
@@ -1159,5 +1208,7 @@ export function unmountOrdenesPage() {
   selectedServicios = [];
   selectedServiciosKm = {};
   currentOrden = null;
+  currentAgendamientoId = null;
+  currentAgendamiento = null;
   pageRoot = null;
 }

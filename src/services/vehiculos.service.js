@@ -1,6 +1,5 @@
 const { get, all, run } = require('../database/connection');
 const { generateQrCodeValue } = require('../utils/qr-code');
-const { syncCliente, syncVehiculo } = require('./railway-sync.service');
 
 async function generateCodigo() {
   const row = await get(
@@ -40,48 +39,37 @@ function mapVehiculo(row) {
   };
 }
 
-function mapClienteSync(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    codigo: row.codigo,
-    nombre: row.nombre,
-    documento: row.documento || '',
-    telefono: row.telefono || '',
-    whatsapp: row.whatsapp || '',
-    email: row.email || '',
-    direccion: row.direccion || '',
-    ciudad: row.ciudad || '',
-    observaciones: row.observaciones || '',
-    ultimaVisita: row.ultima_visita || null
-  };
-}
 
 async function syncVehiculoRailway(vehiculo) {
-  if (!vehiculo) return false;
-
   try {
-    const clienteRow = await get(
-      `SELECT id, codigo, nombre, documento, telefono, whatsapp, email,
-              direccion, ciudad, observaciones, ultima_visita
-       FROM clientes WHERE id = ?`,
-      [vehiculo.clienteId]
-    );
+    const response = await fetch("https://auto-repuestos-leandro-connect-production.up.railway.app/api/sync/vehiculo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: vehiculo.id,
+        codigo: vehiculo.codigo,
+        cliente_id: vehiculo.clienteId,
+        placa: vehiculo.placa,
+        marca: vehiculo.marca,
+        modelo: vehiculo.modelo,
+        anio: vehiculo.anio,
+        color: vehiculo.color,
+        motor: vehiculo.motor,
+        combustible: vehiculo.combustible,
+        chasis: vehiculo.chasis,
+        kilometraje: vehiculo.kilometraje,
+        observaciones: vehiculo.observaciones,
+        qr_code: vehiculo.qrCode,
+        data_geracao_qr: vehiculo.dataGeracaoQr
+      })
+    });
 
-    const cliente = mapClienteSync(clienteRow);
-    if (!cliente) throw new Error('Cliente local no encontrado.');
-
-    await syncCliente(cliente);
-    await syncVehiculo(vehiculo);
-
-    console.log('Vehículo sincronizado con Railway:', vehiculo.placa);
-    return true;
-  } catch (error) {
-    console.error('No se pudo sincronizar el vehículo:', error.message);
-    return false;
+    const texto = await response.text();
+    console.log("RESPOSTA RAILWAY:", response.status, texto);
+  } catch (err) {
+    console.error("No se pudo sincronizar el vehículo:", err.message);
   }
 }
-
 const BASE_SELECT = `
   SELECT v.id, v.codigo, v.cliente_id, v.placa, v.marca, v.modelo, v.anio,
          v.color, v.motor, v.combustible, v.chasis, v.kilometraje,
@@ -103,8 +91,11 @@ async function listVehiculos(search = '') {
   const like = `%${term}%`;
   const rows = await all(
     `${BASE_SELECT}
-     WHERE v.placa LIKE ? OR v.marca LIKE ? OR v.modelo LIKE ?
-        OR v.codigo LIKE ? OR c.nombre LIKE ?
+     WHERE v.placa LIKE ?
+        OR v.marca LIKE ?
+        OR v.modelo LIKE ?
+        OR v.codigo LIKE ?
+        OR c.nombre LIKE ?
      ORDER BY v.placa COLLATE NOCASE ASC`,
     [like, like, like, like, like]
   );
@@ -114,6 +105,7 @@ async function listVehiculos(search = '') {
 
 async function ensureQrCodeForVehiculo(id) {
   const row = await get('SELECT id, qr_code FROM vehiculos WHERE id = ?', [id]);
+
   if (!row || row.qr_code) return;
 
   const qrCode = generateQrCodeValue();
@@ -145,7 +137,10 @@ async function createVehiculo(data) {
     'SELECT id FROM vehiculos WHERE UPPER(placa) = UPPER(?)',
     [placa]
   );
-  if (placaExistente) return { ok: false, error: 'Ya existe un vehículo con esa placa.' };
+
+  if (placaExistente) {
+    return { ok: false, error: 'Ya existe un vehículo con esa placa.' };
+  }
 
   const codigo = await generateCodigo();
   const anio = data.anio ? parseInt(data.anio, 10) : null;
@@ -179,11 +174,13 @@ async function createVehiculo(data) {
 
   const vehiculo = await getVehiculo(result.lastID);
   await syncVehiculoRailway(vehiculo);
+
   return { ok: true, vehiculo };
 }
 
 async function updateVehiculo(id, data) {
   const existing = await getVehiculo(id);
+
   if (!existing) return { ok: false, error: 'Vehículo no encontrado.' };
 
   const placa = data.placa?.trim();
@@ -196,15 +193,27 @@ async function updateVehiculo(id, data) {
     'SELECT id FROM vehiculos WHERE UPPER(placa) = UPPER(?) AND id != ?',
     [placa, id]
   );
-  if (placaExistente) return { ok: false, error: 'Ya existe un vehículo con esa placa.' };
+
+  if (placaExistente) {
+    return { ok: false, error: 'Ya existe un vehículo con esa placa.' };
+  }
 
   const anio = data.anio ? parseInt(data.anio, 10) : null;
   const kilometraje = data.kilometraje ? parseInt(data.kilometraje, 10) : null;
 
   await run(
     `UPDATE vehiculos SET
-       cliente_id = ?, placa = ?, marca = ?, modelo = ?, anio = ?, color = ?,
-       motor = ?, combustible = ?, chasis = ?, kilometraje = ?, observaciones = ?,
+       cliente_id = ?,
+       placa = ?,
+       marca = ?,
+       modelo = ?,
+       anio = ?,
+       color = ?,
+       motor = ?,
+       combustible = ?,
+       chasis = ?,
+       kilometraje = ?,
+       observaciones = ?,
        actualizado_en = CURRENT_TIMESTAMP
      WHERE id = ?`,
     [
@@ -225,11 +234,13 @@ async function updateVehiculo(id, data) {
 
   const vehiculo = await getVehiculo(id);
   await syncVehiculoRailway(vehiculo);
+
   return { ok: true, vehiculo };
 }
 
 async function deleteVehiculo(id) {
   const existing = await getVehiculo(id);
+
   if (!existing) return { ok: false, error: 'Vehículo no encontrado.' };
 
   await run('DELETE FROM vehiculos WHERE id = ?', [id]);
@@ -238,6 +249,7 @@ async function deleteVehiculo(id) {
 
 async function recordEtiquetaPrint(id) {
   const existing = await getVehiculo(id);
+
   if (!existing) return { ok: false, error: 'Vehículo no encontrado.' };
 
   await run(
@@ -250,6 +262,7 @@ async function recordEtiquetaPrint(id) {
 
 async function getVehiculoByQrCode(qrCode) {
   if (!qrCode) return null;
+
   const row = await get(`${BASE_SELECT} WHERE v.qr_code = ?`, [qrCode]);
   return mapVehiculo(row);
 }
@@ -261,6 +274,5 @@ module.exports = {
   createVehiculo,
   updateVehiculo,
   deleteVehiculo,
-  recordEtiquetaPrint,
-  syncVehiculoRailway
+  recordEtiquetaPrint
 };

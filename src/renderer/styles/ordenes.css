@@ -894,3 +894,17 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.ordenes-agenda-origin {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(196, 151, 45, 0.45);
+  border-left: 4px solid #c4972d;
+  border-radius: 8px;
+  background: rgba(196, 151, 45, 0.08);
+  display: grid;
+  gap: 4px;
+}
+.ordenes-agenda-origin strong { color: #8b6618; }
+.ordenes-agenda-origin small { color: #9b3c2e; font-weight: 600; }
+.ordenes-form textarea { width: 100%; resize: vertical; }

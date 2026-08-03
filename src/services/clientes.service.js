@@ -1,19 +1,75 @@
 const { get, all, run } = require('../database/connection');
-const { syncCliente } = require('./railway-sync.service');
+
+const RAILWAY_URL =
+  'https://auto-repuestos-leandro-connect-production.up.railway.app';
 
 async function generateCodigo() {
   const row = await get(
     "SELECT codigo FROM clientes WHERE codigo LIKE 'CLI-%' ORDER BY CAST(SUBSTR(codigo, 5) AS INTEGER) DESC LIMIT 1"
   );
 
-  if (!row) return 'CLI-0001';
+  if (!row) {
+    return 'CLI-0001';
+  }
 
   const next = parseInt(row.codigo.replace('CLI-', ''), 10) + 1;
+
   return `CLI-${String(next).padStart(4, '0')}`;
 }
 
+async function syncClienteRailway(cliente) {
+  if (!cliente) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(`${RAILWAY_URL}/api/sync/cliente`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: cliente.id,
+        codigo: cliente.codigo,
+        nombre: cliente.nombre,
+        documento: cliente.documento,
+        telefono: cliente.telefono,
+        whatsapp: cliente.whatsapp,
+        email: cliente.email,
+        direccion: cliente.direccion,
+        ciudad: cliente.ciudad,
+        observaciones: cliente.observaciones,
+        ultima_visita: cliente.ultimaVisita
+      })
+    });
+
+    const texto = await response.text();
+
+    console.log(
+      'RESPUESTA SYNC CLIENTE:',
+      response.status,
+      texto
+    );
+
+    if (!response.ok) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(
+      'No se pudo sincronizar el cliente:',
+      error.message
+    );
+
+    return false;
+  }
+}
+
 function mapCliente(row) {
-  if (!row) return null;
+  if (!row) {
+    return null;
+  }
 
   return {
     id: row.id,
@@ -32,37 +88,35 @@ function mapCliente(row) {
   };
 }
 
-async function syncClienteRailway(cliente) {
-  try {
-    await syncCliente(cliente);
-    console.log('Cliente sincronizado con Railway:', cliente.nombre);
-    return true;
-  } catch (error) {
-    console.error('No se pudo sincronizar el cliente:', error.message);
-    return false;
-  }
-}
-
 async function listClientes(search = '') {
   const term = search.trim();
 
   if (!term) {
     const rows = await all(
       `SELECT id, codigo, nombre, documento, telefono, whatsapp, email,
-              direccion, ciudad, observaciones, ultima_visita, creado_en, actualizado_en
+              direccion, ciudad, observaciones, ultima_visita,
+              creado_en, actualizado_en
        FROM clientes
        ORDER BY nombre COLLATE NOCASE ASC`
     );
+
     return rows.map(mapCliente);
   }
 
   const like = `%${term}%`;
+
   const rows = await all(
     `SELECT id, codigo, nombre, documento, telefono, whatsapp, email,
-            direccion, ciudad, observaciones, ultima_visita, creado_en, actualizado_en
+            direccion, ciudad, observaciones, ultima_visita,
+            creado_en, actualizado_en
      FROM clientes
-     WHERE codigo LIKE ? OR nombre LIKE ? OR documento LIKE ? OR telefono LIKE ?
-        OR whatsapp LIKE ? OR email LIKE ? OR ciudad LIKE ?
+     WHERE codigo LIKE ?
+        OR nombre LIKE ?
+        OR documento LIKE ?
+        OR telefono LIKE ?
+        OR whatsapp LIKE ?
+        OR email LIKE ?
+        OR ciudad LIKE ?
      ORDER BY nombre COLLATE NOCASE ASC`,
     [like, like, like, like, like, like, like]
   );
@@ -73,22 +127,41 @@ async function listClientes(search = '') {
 async function getCliente(id) {
   const row = await get(
     `SELECT id, codigo, nombre, documento, telefono, whatsapp, email,
-            direccion, ciudad, observaciones, ultima_visita, creado_en, actualizado_en
-     FROM clientes WHERE id = ?`,
+            direccion, ciudad, observaciones, ultima_visita,
+            creado_en, actualizado_en
+     FROM clientes
+     WHERE id = ?`,
     [id]
   );
+
   return mapCliente(row);
 }
 
 async function createCliente(data) {
   const nombre = data.nombre?.trim();
-  if (!nombre) return { ok: false, error: 'El nombre es obligatorio.' };
+
+  if (!nombre) {
+    return {
+      ok: false,
+      error: 'El nombre es obligatorio.'
+    };
+  }
 
   const codigo = await generateCodigo();
+
   const result = await run(
     `INSERT INTO clientes (
-       codigo, nombre, documento, telefono, whatsapp, email,
-       direccion, ciudad, observaciones, ultima_visita, actualizado_en
+       codigo,
+       nombre,
+       documento,
+       telefono,
+       whatsapp,
+       email,
+       direccion,
+       ciudad,
+       observaciones,
+       ultima_visita,
+       actualizado_en
      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     [
       codigo,
@@ -105,21 +178,45 @@ async function createCliente(data) {
   );
 
   const cliente = await getCliente(result.lastID);
+
   await syncClienteRailway(cliente);
-  return { ok: true, cliente };
+
+  return {
+    ok: true,
+    cliente
+  };
 }
 
 async function updateCliente(id, data) {
   const existing = await getCliente(id);
-  if (!existing) return { ok: false, error: 'Cliente no encontrado.' };
+
+  if (!existing) {
+    return {
+      ok: false,
+      error: 'Cliente no encontrado.'
+    };
+  }
 
   const nombre = data.nombre?.trim();
-  if (!nombre) return { ok: false, error: 'El nombre es obligatorio.' };
+
+  if (!nombre) {
+    return {
+      ok: false,
+      error: 'El nombre es obligatorio.'
+    };
+  }
 
   await run(
     `UPDATE clientes SET
-       nombre = ?, documento = ?, telefono = ?, whatsapp = ?, email = ?,
-       direccion = ?, ciudad = ?, observaciones = ?, actualizado_en = CURRENT_TIMESTAMP
+       nombre = ?,
+       documento = ?,
+       telefono = ?,
+       whatsapp = ?,
+       email = ?,
+       direccion = ?,
+       ciudad = ?,
+       observaciones = ?,
+       actualizado_en = CURRENT_TIMESTAMP
      WHERE id = ?`,
     [
       nombre,
@@ -135,16 +232,33 @@ async function updateCliente(id, data) {
   );
 
   const cliente = await getCliente(id);
+
   await syncClienteRailway(cliente);
-  return { ok: true, cliente };
+
+  return {
+    ok: true,
+    cliente
+  };
 }
 
 async function deleteCliente(id) {
   const existing = await getCliente(id);
-  if (!existing) return { ok: false, error: 'Cliente no encontrado.' };
 
-  await run('DELETE FROM clientes WHERE id = ?', [id]);
-  return { ok: true };
+  if (!existing) {
+    return {
+      ok: false,
+      error: 'Cliente no encontrado.'
+    };
+  }
+
+  await run(
+    'DELETE FROM clientes WHERE id = ?',
+    [id]
+  );
+
+  return {
+    ok: true
+  };
 }
 
 module.exports = {
@@ -152,6 +266,5 @@ module.exports = {
   getCliente,
   createCliente,
   updateCliente,
-  deleteCliente,
-  syncClienteRailway
+  deleteCliente
 };

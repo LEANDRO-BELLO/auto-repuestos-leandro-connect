@@ -110,6 +110,7 @@ function buildItemsFromOrden(row, serviciosRows) {
     numeroOs: row.numero_os,
     clienteNombre: row.cliente_nombre || '',
     clienteCodigo: row.cliente_codigo || '',
+    clienteWhatsapp: row.whatsapp || row.telefono || '',
     vehiculoPlaca: row.placa || '',
     vehiculoMarca: row.marca || '',
     vehiculoModelo: row.modelo || '',
@@ -160,7 +161,7 @@ async function listProximosServicios(filters = {}) {
 
   const rows = await all(
     `SELECT o.id AS orden_id, o.numero_os, o.kilometraje, o.proximo_km, o.fecha_vencimiento,
-            c.nombre AS cliente_nombre, c.codigo AS cliente_codigo,
+            c.nombre AS cliente_nombre, c.codigo AS cliente_codigo, c.whatsapp, c.telefono,
             v.id AS vehiculo_id, v.placa, v.marca, v.modelo, v.kilometraje AS vehiculo_km_actual
      FROM ordenes_trabajo o
      INNER JOIN clientes c ON c.id = o.cliente_id

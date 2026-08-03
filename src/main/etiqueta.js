@@ -39,9 +39,9 @@ console.log("QR gravado no veículo:", vehiculo.qrCode);
 console.log("URL do QR:", `https://auto-repuestos-leandro-connect-production.up.railway.app/vehiculo/${encodeURIComponent(vehiculo.qrCode)}`);
 
 const config = await configEtiquetaService.getConfigEtiqueta();
-const qrUrl = `https://auto-repuestos-leandro-connect-production.up.railway.app//vehiculo/${encodeURIComponent(vehiculo.qrCode)}`;
+const qrUrl = `https://auto-repuestos-leandro-connect-production.up.railway.app/vehiculo/${encodeURIComponent(vehiculo.qrCode)}`;
 const qrDataUrl = await createQrDataUrl(qrUrl);
-const tamanho = config.tamanhoEtiqueta || '10x7';
+const tamanho = config.tamanoEtiqueta || config.tamanhoEtiqueta || '10x7';
 
   return {
     ok: true,
@@ -148,7 +148,7 @@ function registerEtiquetaHandlers(ipcMain) {
         return built;
       }
 
-      const openResult = await openEtiquetaPdfFromPayload(built.payload);
+      const openResult = await openEtiquetaPdfFromPayload({ ...built.payload, preprinted: true });
       if (!openResult.ok) {
         return openResult;
       }

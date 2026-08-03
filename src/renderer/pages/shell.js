@@ -1,5 +1,5 @@
 import { escapeHtml } from '../utils/dom.js';
-import { renderDashboardContent } from './dashboard.js';
+import { mountDashboardPage, unmountDashboardPage } from './dashboard.js';
 import { mountClientesPage, unmountClientesPage } from './clientes.js';
 import { mountVehiculosPage, unmountVehiculosPage } from './vehiculos.js';
 import { mountOrdenesPage, unmountOrdenesPage } from './ordenes.js';
@@ -7,12 +7,17 @@ import { mountServiciosRealizadosPage, unmountServiciosRealizadosPage } from './
 import { mountProximosServiciosPage, unmountProximosServiciosPage } from './proximos-servicios.js';
 import { mountConfiguracionPage, unmountConfiguracionPage } from './configuracion.js';
 import { abrirHistorialVehiculo } from './historial-vehiculo-qr.js';
+import {
+  mountAgendamientosPage,
+  unmountAgendamientosPage
+} from './agendamientos.js';
 
 const MENU_ITEMS = [
   { id: 'inicio', label: 'Inicio', icon: 'home' },
   { id: 'clientes', label: 'Clientes', icon: 'users' },
   { id: 'vehiculos', label: 'Vehículos', icon: 'car' },
   { id: 'ordenes', label: 'Órdenes de Trabajo', icon: 'clipboard' },
+  { id: 'agendamientos', label: 'Agendamientos', icon: 'calendar' },
   { id: 'servicios', label: 'Servicios Realizados', icon: 'check' },
   { id: 'proximos', label: 'Próximos Servicios', icon: 'calendar' },
   { id: 'empresa', label: 'Empresa', icon: 'building' },
@@ -24,6 +29,7 @@ const PAGE_HEADERS = {
   clientes: { title: 'Gestión de Clientes', showDate: false },
   vehiculos: { title: 'Gestión de Vehículos', showDate: false },
   ordenes: { title: 'Órdenes de Trabajo', showDate: false },
+  agendamientos: { title: 'Agendamientos', showDate: false },
   servicios: { title: 'Servicios Realizados', showDate: false },
   proximos: { title: 'Próximos Servicios', showDate: false },
   empresa: { title: 'Empresa', showDate: false },
@@ -46,13 +52,21 @@ function svgIcon(name) {
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${content}</svg>`;
 }
 
-function formatDateParaguay() {
+function formatDateParaguay(date = new Date()) {
   return new Intl.DateTimeFormat('es-PY', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric'
-  }).format(new Date());
+  }).format(date);
+}
+
+function formatTimeParaguay(date = new Date()) {
+  return new Intl.DateTimeFormat('es-PY', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(date);
 }
 
 function renderNavItems(activePage) {
@@ -84,29 +98,31 @@ let shellState = {
   currentPage: 'inicio',
   user: null,
   empresa: null,
-  onLogout: null
+  onLogout: null,
+  clockTimer: null
 };
 
-function updateHeader(pageId, empresaNombre) {
-  const headerEl = document.querySelector('.dashboard-header');
-  if (!headerEl) {
-    return;
+function updateHeader() {
+  const dateEl = document.querySelector('#dashboard-current-date');
+  const timeEl = document.querySelector('#dashboard-current-time');
+  const now = new Date();
+
+  if (dateEl) {
+    dateEl.textContent = formatDateParaguay(now);
   }
 
-  const config = PAGE_HEADERS[pageId] || PAGE_HEADERS.inicio;
+  if (timeEl) {
+    timeEl.textContent = formatTimeParaguay(now);
+  }
+}
 
-  headerEl.innerHTML = `
-    <div class="dashboard-header__greeting">
-      <h1>${escapeHtml(config.title)}</h1>
-      <p>${escapeHtml(empresaNombre)}</p>
-    </div>
-    ${config.showDate ? `
-      <div class="dashboard-header__date">
-        ${svgIcon('calendar')}
-        <span>${escapeHtml(formatDateParaguay())}</span>
-      </div>
-    ` : ''}
-  `;
+function startHeaderClock() {
+  if (shellState.clockTimer) {
+    clearInterval(shellState.clockTimer);
+  }
+
+  updateHeader();
+  shellState.clockTimer = setInterval(updateHeader, 1000);
 }
 
 function updateNavActive(pageId) {
@@ -117,7 +133,7 @@ function updateNavActive(pageId) {
   });
 }
 
-async function navigateTo(pageId) {
+async function navigateTo(pageId, navigationDetail = {}) {
   const contentEl = document.querySelector('.dashboard-content');
   if (!contentEl) {
     return;
@@ -126,6 +142,14 @@ async function navigateTo(pageId) {
   const previousPage = shellState.currentPage;
 
   try {
+    if (previousPage === 'inicio' && pageId !== 'inicio') {
+      unmountDashboardPage();
+    }
+
+    if (previousPage === 'agendamientos' && pageId !== 'agendamientos') {
+      unmountAgendamientosPage();
+    }
+
     if (previousPage === 'clientes' && pageId !== 'clientes') {
       unmountClientesPage();
     }
@@ -151,11 +175,12 @@ async function navigateTo(pageId) {
     }
 
     updateNavActive(pageId);
-    updateHeader(pageId, shellState.empresa?.nombre || 'Auto Repuestos Leandro S.A.');
+    updateHeader();
 
     switch (pageId) {
       case 'inicio':
-        contentEl.innerHTML = renderDashboardContent();
+        contentEl.innerHTML = '';
+        await mountDashboardPage(contentEl);
         break;
       case 'clientes':
         contentEl.innerHTML = '';
@@ -167,7 +192,11 @@ async function navigateTo(pageId) {
         break;
       case 'ordenes':
         contentEl.innerHTML = '';
-        await mountOrdenesPage(contentEl);
+        await mountOrdenesPage(contentEl, navigationDetail);
+        break;
+      case 'agendamientos':
+        contentEl.innerHTML = '';
+        await mountAgendamientosPage(contentEl);
         break;
       case 'servicios':
         contentEl.innerHTML = '';
@@ -195,7 +224,7 @@ async function navigateTo(pageId) {
     console.error(`Error al navegar a "${pageId}":`, error);
     shellState.currentPage = previousPage;
     updateNavActive(previousPage);
-    updateHeader(previousPage, shellState.empresa?.nombre || 'Auto Repuestos Leandro S.A.');
+    updateHeader();
     contentEl.innerHTML = `
       <div class="shell-placeholder">
         <p>No se pudo abrir el módulo. Reinicie la aplicación e intente nuevamente.</p>
@@ -227,21 +256,24 @@ export function renderAppShell({ user, empresa, onLogout, page = 'inicio' }) {
   const root = document.getElementById('app-root');
 
   shellState = {
-    currentPage: 'historial-vehiculo-qr',
+    currentPage: page,
     user,
     empresa,
     onLogout,
-    qrCode: 'COLE_AQUI_O_QR_CODE_DO_VEICULO'
+    qrCode: 'COLE_AQUI_O_QR_CODE_DO_VEICULO',
+    clockTimer: null
   };
 
   root.innerHTML = `
     <div class="dashboard-shell">
       <aside class="dashboard-sidebar" aria-label="Menú principal">
-        <div class="dashboard-sidebar__brand">
-          <div class="dashboard-sidebar__logo" aria-hidden="true">ARL</div>
-          <p class="dashboard-sidebar__title">AUTO REPUESTOS<br>LEANDRO CONNECT</p>
-          <p class="dashboard-sidebar__subtitle">Katueté – Canindeyú – Paraguay</p>
-        </div>
+       <div class="dashboard-sidebar__brand">
+  <img
+    class="dashboard-sidebar__logo-image"
+    src="./assets/logo-oficial.png"
+    alt="Auto Repuestos Leandro S.A."
+  />
+</div>
 
         <nav class="dashboard-nav">
           <ul class="dashboard-nav__list">
@@ -250,22 +282,56 @@ export function renderAppShell({ user, empresa, onLogout, page = 'inicio' }) {
         </nav>
 
         <div class="dashboard-sidebar__user">
-          <span class="dashboard-sidebar__user-name">${escapeHtml(user.nombre)}</span>
-          <span class="dashboard-sidebar__user-role">${escapeHtml(user.perfil)}</span>
-          <button class="btn-ghost dashboard-sidebar__logout" type="button" id="logout-button">Salir</button>
+          <button class="dashboard-sidebar__logout" type="button" id="logout-button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5M14 8l4 4-4 4M8 12h10" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Salir
+          </button>
         </div>
       </aside>
 
       <div class="dashboard-main">
-        <header class="dashboard-header"></header>
+        <header class="dashboard-header">
+          <div class="dashboard-header__identity">
+            <h1>AUTO REPUESTOS LEANDRO CONNECT</h1>
+            <p>Innovación y Calidad</p>
+            <div class="dashboard-header__service-line">
+              <span></span>
+              <strong>CONECTAMOS TU VEHÍCULO CON EL MEJOR SERVICIO</strong>
+              <span></span>
+            </div>
+          </div>
+
+          <div class="dashboard-header__information">
+            <div class="dashboard-header__info-block dashboard-header__date-time">
+              ${svgIcon('calendar')}
+              <div>
+                <span>Fecha: <strong id="dashboard-current-date"></strong></span>
+                <span>Hora: <strong id="dashboard-current-time"></strong></span>
+              </div>
+            </div>
+
+            <div class="dashboard-header__divider" aria-hidden="true"></div>
+
+            <div class="dashboard-header__info-block dashboard-header__profile">
+              ${svgIcon('users')}
+              <div class="dashboard-header__profile-content">
+                <strong>${escapeHtml(user.nombre)}</strong>
+                <span>${escapeHtml(user.perfil)}</span>
+                <div class="dashboard-header__database dashboard-header__database--profile">
+                  <span class="dashboard-header__database-dot" aria-hidden="true"></span>
+                  <span>Base de datos conectada</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
         <main class="dashboard-content"></main>
       </div>
 
       <footer class="dashboard-footer">
-        <span class="dashboard-footer__status">
-          <span class="dashboard-footer__dot" aria-hidden="true"></span>
-          Base de datos SQLite conectada
-        </span>
         <span class="dashboard-footer__version" id="dashboard-version">Versión 1.0 Comercial</span>
       </footer>
     </div>
@@ -273,6 +339,11 @@ export function renderAppShell({ user, empresa, onLogout, page = 'inicio' }) {
 
   root.querySelector('#logout-button').addEventListener('click', onLogout);
   bindNavigation();
+  startHeaderClock();
+  window.addEventListener('arl:navigate', (event) => {
+    const target = event.detail?.page;
+    if (target) navigateTo(target, event.detail || {});
+  });
   navigateTo(page);
 
   window.api.getVersion().then((version) => {

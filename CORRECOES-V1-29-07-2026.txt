@@ -1,0 +1,17 @@
+AUTO REPUESTOS LEANDRO CONNECT — REVISIÓN 29/07/2026
+
+Correcciones realizadas:
+1. Las órdenes finalizadas se guardan primero en SQLite y la sincronización con Railway ya no bloquea el uso offline.
+2. La sincronización tiene tiempo máximo de espera y una falla de Internet no invalida la orden local.
+3. Servicios Realizados continúa consultando la base local, incluyendo órdenes finalizadas offline.
+4. Nuevo agendamiento permite cliente no registrado (nombre y teléfono) y vehículo no registrado (descripción).
+5. Nueva migración v14 conserva los agendamientos existentes y habilita cliente/vehículo libres.
+6. PDF Servicios Realizados usa el logo oficial, mantiene las pastillas delanteras/traseras y rótulos aprobados: Próximo servicio y Vencimiento.
+7. Etiqueta 9 x 6 cm preservada para calibración con Honeywell PC42T.
+
+Prueba recomendada:
+- Ejecutar npm start con Internet desconectado.
+- Finalizar una OT con factura.
+- Abrir Servicios Realizados y verificar la OT.
+- Generar el PDF.
+- Volver a conectar Internet y reiniciar para probar la sincronización.

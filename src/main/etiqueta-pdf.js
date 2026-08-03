@@ -3,7 +3,7 @@ const path = require('path');
 const { app, shell, dialog, BrowserWindow } = require('electron');
 const { pathToFileURL } = require('url');
 const logger = require('../utils/logger');
-const { buildEtiquetaDocumentHtml } = require('../utils/etiqueta-template');
+const { buildEtiquetaDocumentHtml, buildEtiquetaPreImpressaDocumentHtml } = require('../utils/etiqueta-template');
 
 const { getPageConfig } = require('../utils/etiqueta-page-sizes');
 const { parsePdfMediaBoxMm } = require('./document');
@@ -35,17 +35,19 @@ function materializeQrSrc(qrDataUrl) {
 }
 
 function buildEtiquetaHtmlFromPayload(payload = {}) {
-  const tamano = payload.tamano || payload.tamanoEtiqueta || payload.config?.tamanoEtiqueta || '10x7';
+  const tamano = payload.tamano || payload.tamanoEtiqueta || payload.config?.tamanoEtiqueta || '9x6';
   const qrSrc = materializeQrSrc(payload.qrDataUrl || null);
 
   return {
     tamano,
-    html: buildEtiquetaDocumentHtml({
-      config: payload.config || {},
-      vehiculo: payload.vehiculo || {},
-      qrDataUrl: qrSrc,
-      tamano
-    })
+    html: payload.preprinted
+      ? buildEtiquetaPreImpressaDocumentHtml({ vehiculo: payload.vehiculo || {}, qrDataUrl: qrSrc, tamano })
+      : buildEtiquetaDocumentHtml({
+          config: payload.config || {},
+          vehiculo: payload.vehiculo || {},
+          qrDataUrl: qrSrc,
+          tamano
+        })
   };
 }
 

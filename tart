@@ -1,0 +1,13 @@
+warning: in the working copy of 'src/renderer/pages/dashboard.js', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/renderer/pages/dashboard.js b/src/renderer/pages/dashboard.js[m
+[1mindex d9dcb78..4ad285b 100644[m
+[1m--- a/src/renderer/pages/dashboard.js[m
+[1m+++ b/src/renderer/pages/dashboard.js[m
+[36m@@ -83,6 +83,7 @@[m [mconst MENU_ITEMS = [[m
+   { id: 'clientes', label: 'Clientes', icon: 'users' },[m
+   { id: 'vehiculos', label: 'Vehículos', icon: 'car' },[m
+   { id: 'ordenes', label: 'Órdenes de Trabajo', icon: 'clipboard' },[m
+[32m+[m[32m  { id: 'agendamiento', label: 'Agendamiento', icon: 'calendar' },[m
+   { id: 'servicios', label: 'Servicios Realizados', icon: 'check' },[m
+   { id: 'proximos', label: 'Próximos Servicios', icon: 'calendar' },[m
+   { id: 'empresa', label: 'Empresa', icon: 'building' },[m

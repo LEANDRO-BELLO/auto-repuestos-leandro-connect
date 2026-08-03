@@ -1,6 +1,7 @@
 {
   "name": "auto-repuestos-leandro-connect",
-  "version": "1.0.0",
+  "productName": "Auto Repuestos Leandro Connect",
+  "version": "1.0.1",
   "description": "Auto Repuestos Leandro Connect — Sistema comercial modular para lubricentro y mantenimiento preventivo.",
   "main": "src/main/main.js",
   "author": "Auto Repuestos Leandro S.A.",
@@ -9,12 +10,38 @@
     "start": "electron .",
     "dev": "electron .",
     "init-db": "node src/database/init-db.js",
-    "sync-railway": "node scripts/sync-railway.js"
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "electron-builder --win nsis"
   },
   "dependencies": {
-    "electron": "^35.0.0",
     "jspdf": "^2.5.2",
     "qrcode": "^1.5.4",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.autorepuestosleandro.connect",
+    "productName": "Auto Repuestos Leandro Connect",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Auto Repuestos Leandro Connect"
+    }
   }
 }

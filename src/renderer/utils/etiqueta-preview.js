@@ -1,4 +1,5 @@
 const PAGE_MM = {
+  '9x6': [90, 60],
   '10x7': [100, 70],
   '12x8': [120, 80],
   '8x5': [80, 50]
@@ -7,7 +8,7 @@ const PAGE_MM = {
 const MM_TO_PX = 96 / 25.4;
 
 function fitPreviewToContainer(frame, container, tamano) {
-  const [wMm, hMm] = PAGE_MM[tamano] || PAGE_MM['10x7'];
+  const [wMm, hMm] = PAGE_MM[tamano] || PAGE_MM['9x6'];
   const naturalW = wMm * MM_TO_PX;
   const naturalH = hMm * MM_TO_PX;
   const maxW = container.clientWidth;
@@ -30,7 +31,7 @@ function fitPreviewToContainer(frame, container, tamano) {
 /**
  * Prévia idêntica ao PDF — mesmo HTML/CSS do modelo aprobado.
  */
-export async function mountEtiquetaPreview(container, config, tamano = '10x7') {
+export async function mountEtiquetaPreview(container, config, tamano = '9x6') {
   if (!container) {
     return;
   }

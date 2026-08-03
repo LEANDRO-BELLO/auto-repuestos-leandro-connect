@@ -7,7 +7,8 @@ const TEXTO_ETIQUETA_DEFAULT =
 let pageRoot = null;
 
 const TAMANOS = [
-  { value: '10x7', label: '10 x 7 cm', hint: 'Recomendado' },
+  { value: '9x6', label: '9 x 6 cm', hint: 'Tamaño oficial' },
+  { value: '10x7', label: '10 x 7 cm', hint: 'Anterior' },
   { value: '12x8', label: '12 x 8 cm', hint: 'Premium' },
   { value: '8x5', label: '8 x 5 cm', hint: 'Compacto' }
 ];
@@ -28,7 +29,7 @@ function getFormValues(form) {
   const tamanoEl = form.querySelector('input[name="tamanoEtiqueta"]:checked');
 
   return {
-    tamanoEtiqueta: tamanoEl?.value || '10x7',
+    tamanoEtiqueta: tamanoEl?.value || '9x6',
     telefonoWhatsapp: form.telefonoWhatsapp.value,
     telefonoAlternativo: form.telefonoAlternativo.value,
     email: form.email.value,

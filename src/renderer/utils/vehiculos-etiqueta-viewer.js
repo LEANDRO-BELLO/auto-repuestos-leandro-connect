@@ -8,6 +8,7 @@ function closeEtiquetaViewer() {
 }
 
 const PAGE_MM = {
+  '9x6': [90, 60],
   '10x7': [100, 70],
   '12x8': [120, 80],
   '8x5': [80, 50]
@@ -16,7 +17,7 @@ const PAGE_MM = {
 const MM_TO_PX = 96 / 25.4;
 
 function fitEtiquetaFrame(frame, wrapper, tamano) {
-  const [wMm, hMm] = PAGE_MM[tamano] || PAGE_MM['10x7'];
+  const [wMm, hMm] = PAGE_MM[tamano] || PAGE_MM['9x6'];
   const naturalW = wMm * MM_TO_PX;
   const naturalH = hMm * MM_TO_PX;
   const maxW = wrapper.clientWidth || naturalW;
@@ -78,7 +79,7 @@ export async function openVehiculoEtiquetaViewer(vehiculoId, { onPrint, onDownlo
       return;
     }
 
-    const tamano = result.tamano || '10x7';
+    const tamano = result.tamano || '9x6';
 
     loading.innerHTML = `
       <div class="vehiculos-etiqueta-modal__backdrop" data-action="close-etiqueta-viewer"></div>

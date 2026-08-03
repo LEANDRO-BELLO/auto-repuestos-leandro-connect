@@ -1,5 +1,6 @@
 /**
- * Medidas fixas do modelo aprovado (referência 10×7 cm).
+ * Medidas fixas do modelo aprovado (referência original 10×7 cm),
+ * escaladas proporcionalmente para o tamanho oficial 9×6 cm.
  * Única fonte de valores em mm — CSS e PDF derivam deste spec.
  */
 const BASE = {
@@ -29,6 +30,11 @@ const BASE = {
 };
 
 const SIZE_OVERRIDES = {
+  '9x6': {
+    logoMaxHeightMm: 25.7,
+    footerHeightMm: 8.6,
+    columnGapMm: 1.35
+  },
   '12x8': {
     logoMaxHeightMm: 34,
     footerHeightMm: 12,
@@ -57,7 +63,7 @@ function scaleMm(value, scale) {
   return value * scale;
 }
 
-function getEtiquetaLayout(tamano = '10x7') {
+function getEtiquetaLayout(tamano = '9x6') {
   const { getPageConfig } = require('./etiqueta-page-sizes');
   const page = getPageConfig(tamano);
   const scaleX = page.widthMm / 100;
