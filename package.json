@@ -7,14 +7,24 @@
   "author": "Auto Repuestos Leandro S.A.",
   "license": "UNLICENSED",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron .",
-    "init-db": "node src/database/init-db.js",
-    "postinstall": "electron-builder install-app-deps",
-    "dist": "electron-builder --win nsis"
-  },
+  "start": "electron .",
+  "dev": "electron .",
+  "init-db": "node src/database/init-db.js",
+  "postinstall": "electron-builder install-app-deps",
+  "dist": "electron-builder --win nsis",
+ "server": "node src/server/server.js",
+"test-postgres": "node src/database/test-postgres.js",
+"init-postgres": "node src/database/postgres-init.js",
+"migrate-postgres-clientes": "node src/database/postgres-migrate-clientes.js",
+"migrate-postgres-vehiculos": "node src/database/postgres-migrate-vehiculos.js",
+"migrate-postgres-ordenes": "node src/database/postgres-migrate-ordenes.js",
+"import-postgres-datos": "node src/database/postgres-importar-datos.js"
+},
   "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "jspdf": "^2.5.2",
+    "pg": "^8.22.0",
     "qrcode": "^1.5.4",
     "sqlite3": "^5.1.7"
   },
