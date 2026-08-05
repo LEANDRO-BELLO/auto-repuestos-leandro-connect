@@ -4,7 +4,7 @@ const { app } = require('electron');
 const { pathToFileURL } = require('url');
 const { PREVIEW_VEHICULO_DEMO } = require('../utils/etiqueta-template');
 const { createQrDataUrl } = require('../utils/qr-code');
-const vehiculosService = require('../services/vehiculos-postgres.service');
+const vehiculosService = require('../services/vehiculos.service');
 const configEtiquetaService = require('../services/config-etiqueta.service');
 const logger = require('../utils/logger');
 const {
