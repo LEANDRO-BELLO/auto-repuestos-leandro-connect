@@ -6,7 +6,7 @@ const {
   const { generateQrCodeValue } = require('../utils/qr-code');
   
   const RAILWAY_URL =
-    'https://auto-repuestos-leandro-connect-production.up.railway.app';
+    'https://arlc-central-api-production.up.railway.app';
   
   function mapVehiculo(row) {
     if (!row) {

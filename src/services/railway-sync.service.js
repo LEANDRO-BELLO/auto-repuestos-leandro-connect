@@ -1,4 +1,4 @@
-const RAILWAY_URL = 'https://auto-repuestos-leandro-connect-production.up.railway.app';
+const RAILWAY_URL = 'https://arlc-central-api-production.up.railway.app';
 const TIMEOUT_MS = 15000;
 
 async function postJson(path, payload) {
@@ -107,3 +107,4 @@ module.exports = {
   syncVehiculo,
   syncOrden
 };
+
