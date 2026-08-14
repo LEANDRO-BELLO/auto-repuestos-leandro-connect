@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
 const { pathToFileURL } = require('url');
@@ -35,7 +35,7 @@ async function buildVehiculoEtiquetaPayload(vehiculoId) {
   if (!vehiculo?.qrCode) {
     return {
       ok: false,
-      error: 'QR Code no disponible para este vehículo.'
+      error: 'QR Code no disponible para este vehÃ­culo.'
     };
   }
 
@@ -77,7 +77,7 @@ async function getVehiculoQrDataUrl(vehiculoId) {
   if (!vehiculo?.qrCode) {
     return {
       ok: false,
-      error: 'QR Code no disponible para este vehículo.'
+      error: 'QR Code no disponible para este vehÃ­culo.'
     };
   }
 
@@ -133,7 +133,7 @@ function registerEtiquetaHandlers(ipcMain) {
   ipcMain.handle('vehiculos:previewEtiqueta', async (_event, vehiculoId) => {
     try {
       if (!vehiculoId) {
-        return { ok: false, error: 'Vehículo no identificado.' };
+        return { ok: false, error: 'VehÃ­culo no identificado.' };
       }
 
       const built = await buildVehiculoEtiquetaPayload(vehiculoId);
@@ -141,7 +141,7 @@ function registerEtiquetaHandlers(ipcMain) {
         return built;
       }
 
-      return await previewEtiquetaHtmlFromPayload(built.payload);
+      return await previewEtiquetaHtmlFromPayload({ ...built.payload, preprinted: true });
     } catch (error) {
       logger.error('Error en vehiculos:previewEtiqueta', error);
       return { ok: false, error: 'No se pudo generar la vista previa de la etiqueta.' };
@@ -151,7 +151,7 @@ function registerEtiquetaHandlers(ipcMain) {
   ipcMain.handle('vehiculos:downloadEtiqueta', async (event, vehiculoId) => {
     try {
       if (!vehiculoId) {
-        return { ok: false, error: 'Vehículo no identificado.' };
+        return { ok: false, error: 'VehÃ­culo no identificado.' };
       }
 
       const built = await buildVehiculoEtiquetaPayload(vehiculoId);
@@ -174,7 +174,7 @@ function registerEtiquetaHandlers(ipcMain) {
   ipcMain.handle('vehiculos:printEtiqueta', async (_event, vehiculoId) => {
     try {
       if (!vehiculoId) {
-        return { ok: false, error: 'Vehículo no identificado.' };
+        return { ok: false, error: 'VehÃ­culo no identificado.' };
       }
 
       const built = await buildVehiculoEtiquetaPayload(vehiculoId);
@@ -197,3 +197,4 @@ function registerEtiquetaHandlers(ipcMain) {
 }
 
 module.exports = { registerEtiquetaHandlers, getVehiculoQrDataUrl };
+
