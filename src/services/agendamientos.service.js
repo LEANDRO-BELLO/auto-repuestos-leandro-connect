@@ -1,4 +1,4 @@
-const { all, get, run } = require('../database/connection');
+﻿const { all, get, run } = require('../database/connection');
 
 function normalize(data = {}) {
   const clienteId =
@@ -53,7 +53,7 @@ function validate(data) {
   }
 
   if (!data.vehiculoId && !data.vehiculoDescripcion) {
-    return 'Seleccione un vehículo o escriba la descripción del vehículo.';
+    return 'Seleccione un vehÃ­culo o escriba la descripciÃ³n del vehÃ­culo.';
   }
 
   return null;
@@ -123,7 +123,7 @@ async function listAgendamientos(filters = {}) {
 
 params.push(like, like, like, like, like);
   }
-  return all(`${BASE_SELECT} WHERE ${where} ORDER BY a.fecha ASC, a.hora ASC, a.id ASC`, params);
+  return all(`${BASE_SELECT} WHERE ${where} ORDER BY CASE WHEN a.estado IN ('Pendiente', 'En proceso') THEN 0 ELSE 1 END ASC, a.fecha ASC, a.hora ASC, a.id ASC`, params);
 }
 
 async function listProximosAgendamientos(limit = 12) {
@@ -131,7 +131,7 @@ async function listProximosAgendamientos(limit = 12) {
   return all(
     `${BASE_SELECT}
       WHERE a.fecha >= ? AND a.estado = 'Pendiente'
-      ORDER BY a.fecha ASC, a.hora ASC, a.id ASC
+      ORDER BY CASE WHEN a.estado IN ('Pendiente', 'En proceso') THEN 0 ELSE 1 END ASC, a.fecha ASC, a.hora ASC, a.id ASC
       LIMIT ?`,
     [today, Number(limit) || 12]
   );
@@ -196,7 +196,7 @@ async function updateAgendamiento(id, payload) {
 
 async function setEstadoAgendamiento(id, estado) {
   const permitidos = new Set(['Pendiente', 'En proceso', 'Finalizado', 'Cancelado']);
-  if (!permitidos.has(estado)) return { ok: false, error: 'Estado inválido.' };
+  if (!permitidos.has(estado)) return { ok: false, error: 'Estado invÃ¡lido.' };
   await run('UPDATE agendamientos SET estado = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [estado, id]);
   return { ok: true };
 }
@@ -215,3 +215,4 @@ module.exports = {
   setEstadoAgendamiento,
   deleteAgendamiento
 };
+
