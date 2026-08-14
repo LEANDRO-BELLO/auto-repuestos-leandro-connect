@@ -97,7 +97,7 @@ async function listClientes(search = '') {
               direccion, ciudad, observaciones, ultima_visita,
               creado_en, actualizado_en
        FROM clientes
-       ORDER BY nombre COLLATE NOCASE ASC`
+       ORDER BY LOWER(nombre) ASC`
     );
 
     return rows.map(mapCliente);
@@ -117,7 +117,7 @@ async function listClientes(search = '') {
         OR whatsapp LIKE ?
         OR email LIKE ?
         OR ciudad LIKE ?
-     ORDER BY nombre COLLATE NOCASE ASC`,
+     ORDER BY LOWER(nombre) ASC`,
     [like, like, like, like, like, like, like]
   );
 

@@ -32,8 +32,9 @@ async function getDashboard() {
 }
 
 async function marcarAvisado(itemId) {
-  await run('INSERT OR IGNORE INTO avisos_servicios (item_id, fecha_aviso) VALUES (?, ?)', [String(itemId), todayIso()]);
+  await run('INSERT INTO avisos_servicios (item_id, fecha_aviso) VALUES (?, ?) ON CONFLICT (item_id, fecha_aviso) DO NOTHING', [String(itemId), todayIso()]);
   return { ok: true };
 }
 
 module.exports = { getDashboard, marcarAvisado };
+

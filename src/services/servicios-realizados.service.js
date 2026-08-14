@@ -45,7 +45,8 @@ async function countFinalizadas() {
   const row = await get(
     "SELECT COUNT(*) AS total FROM ordenes_trabajo WHERE estado = 'Finalizada'"
   );
-  return row?.total ?? 0;
+
+  return Number(row?.total || 0);
 }
 
 async function listServiciosRealizados(filters = {}) {
@@ -103,21 +104,40 @@ async function listServiciosRealizados(filters = {}) {
   const whereClause = whereParts.join(' AND ');
 
   const rows = await all(
-    `SELECT o.id, o.numero_os, o.cliente_id, o.vehiculo_id, o.fecha, o.kilometraje,
-            o.intervalo, o.proximo_km, o.fecha_vencimiento,
-            o.observaciones, o.estado, o.numero_factura,
-            c.nombre AS cliente_nombre, c.codigo AS cliente_codigo,
-            v.placa AS vehiculo_placa, v.marca AS vehiculo_marca, v.modelo AS vehiculo_modelo,
-            GROUP_CONCAT(os.servicio) AS servicios_ids
-     FROM ordenes_trabajo o
-     INNER JOIN clientes c ON c.id = o.cliente_id
-     INNER JOIN vehiculos v ON v.id = o.vehiculo_id
-     LEFT JOIN ordenes_servicios os ON os.orden_id = o.id
-     WHERE ${whereClause}
-     GROUP BY o.id
-     ORDER BY o.fecha DESC, o.id DESC`,
-    params
-  );
+  `SELECT o.id, o.numero_os, o.cliente_id, o.vehiculo_id, o.fecha, o.kilometraje,
+          o.intervalo, o.proximo_km, o.fecha_vencimiento,
+          o.observaciones, o.estado, o.numero_factura,
+          c.nombre AS cliente_nombre, c.codigo AS cliente_codigo,
+          v.placa AS vehiculo_placa,
+          v.marca AS vehiculo_marca,
+          v.modelo AS vehiculo_modelo,
+          STRING_AGG(os.servicio, ',') AS servicios_ids
+   FROM ordenes_trabajo o
+   INNER JOIN clientes c ON c.id = o.cliente_id
+   INNER JOIN vehiculos v ON v.id = o.vehiculo_id
+   LEFT JOIN ordenes_servicios os ON os.orden_id = o.id
+   WHERE ${whereClause}
+   GROUP BY
+     o.id,
+     o.numero_os,
+     o.cliente_id,
+     o.vehiculo_id,
+     o.fecha,
+     o.kilometraje,
+     o.intervalo,
+     o.proximo_km,
+     o.fecha_vencimiento,
+     o.observaciones,
+     o.estado,
+     o.numero_factura,
+     c.nombre,
+     c.codigo,
+     v.placa,
+     v.marca,
+     v.modelo
+   ORDER BY o.fecha DESC, o.id DESC`,
+  params
+);
 
   const totalFinalizadas = await countFinalizadas();
 

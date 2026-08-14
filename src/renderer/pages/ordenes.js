@@ -589,7 +589,9 @@ function renderVehiculoResults(vehiculos) {
 }
 
 function selectVehiculoById(id) {
-  selectedVehiculo = vehiculoSearchResults.find((v) => v.id === Number(id)) || null;
+  selectedVehiculo = vehiculoSearchResults.find(
+    (v) => Number(v.id) === Number(id)
+  ) || null;
 
   if (!selectedVehiculo && id) {
     return;

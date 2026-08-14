@@ -32,20 +32,41 @@ function cleanupPreviewHtml() {
 async function buildVehiculoEtiquetaPayload(vehiculoId) {
   const vehiculo = await vehiculosService.getVehiculo(vehiculoId);
 
-if (!vehiculo?.qrCode) {
-  return { ok: false, error: 'QR Code no disponible para este vehículo.' };
-}
-console.log("QR gravado no veículo:", vehiculo.qrCode);
-console.log("URL do QR:", `https://auto-repuestos-leandro-connect-production.up.railway.app/vehiculo/${encodeURIComponent(vehiculo.qrCode)}`);
+  if (!vehiculo?.qrCode) {
+    return {
+      ok: false,
+      error: 'QR Code no disponible para este vehículo.'
+    };
+  }
 
-const config = await configEtiquetaService.getConfigEtiqueta();
-const qrUrl = `https://auto-repuestos-leandro-connect-production.up.railway.app/vehiculo/${encodeURIComponent(vehiculo.qrCode)}`;
-const qrDataUrl = await createQrDataUrl(qrUrl);
-const tamanho = config.tamanoEtiqueta || config.tamanhoEtiqueta || '10x7';
+  const config = await configEtiquetaService.getConfigEtiqueta();
+
+  const apiUrl = String(
+    process.env.ARL_API_URL ||
+    process.env.API_URL ||
+    'https://arlc-central-api-production.up.railway.app'
+  ).replace(/\/+$/, '');
+
+  const qrUrl =
+    `${apiUrl}/vehiculo/${encodeURIComponent(vehiculo.qrCode)}`;
+
+  const qrDataUrl = await createQrDataUrl(qrUrl);
+
+  const tamanho =
+    config.tamanoEtiqueta ||
+    config.tamanhoEtiqueta ||
+    '10x7';
 
   return {
     ok: true,
-    payload: { config, vehiculo, qrDataUrl, tamanho, tamanoEtiqueta: tamanho },
+    payload: {
+      config,
+      vehiculo,
+      qrDataUrl,
+      tamanho,
+      tamano: tamanho,
+      tamanoEtiqueta: tamanho
+    },
     vehiculo
   };
 }
@@ -54,13 +75,26 @@ async function getVehiculoQrDataUrl(vehiculoId) {
   const vehiculo = await vehiculosService.getVehiculo(vehiculoId);
 
   if (!vehiculo?.qrCode) {
-    return { ok: false, error: 'QR Code no disponible para este vehículo.' };
+    return {
+      ok: false,
+      error: 'QR Code no disponible para este vehículo.'
+    };
   }
 
-  const qrUrl = `https://auto-repuestos-leandro-connect-production.up.railway.app/vehiculo/${vehiculo.qrCode}`;
+  const apiUrl = String(
+    process.env.ARL_API_URL ||
+    process.env.API_URL ||
+    'https://arlc-central-api-production.up.railway.app'
+  ).replace(/\/+$/, '');
+
+  const qrUrl = `${apiUrl}/vehiculo/${encodeURIComponent(vehiculo.qrCode)}`;
   const dataUrl = await createQrDataUrl(qrUrl);
 
-  return { ok: true, dataUrl, vehiculo };
+  return {
+    ok: true,
+    dataUrl,
+    vehiculo
+  };
 }
 
 

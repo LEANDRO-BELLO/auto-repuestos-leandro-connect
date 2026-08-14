@@ -306,7 +306,7 @@ async function listVehiculosByCliente(clienteId) {
      FROM vehiculos v
      INNER JOIN clientes c ON c.id = v.cliente_id
      WHERE v.cliente_id = ?
-     ORDER BY v.placa COLLATE NOCASE ASC`,
+     ORDER BY LOWER(v.placa) ASC`,
     [clienteId]
   );
 
@@ -345,7 +345,7 @@ async function searchVehiculosForOrden(search = '') {
         OR c.codigo LIKE ?
         OR v.marca LIKE ?
         OR v.modelo LIKE ?
-     ORDER BY v.placa COLLATE NOCASE ASC
+     ORDER BY LOWER(v.placa) ASC
      LIMIT 25`,
     [like, like, like, like, like]
   );

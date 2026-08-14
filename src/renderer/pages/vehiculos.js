@@ -146,6 +146,7 @@ function renderFormModal(vehiculo = null) {
                 <option value="GNV">GNV</option>
                 <option value="Eléctrico">Eléctrico</option>
                 <option value="Híbrido">Híbrido</option>
+                <option value="Flex">Flex</option>
               </select>
             </div>
 
@@ -301,7 +302,9 @@ function handleClienteResultsClick(event) {
     return;
   }
 
-  selectedCliente = clienteSearchResults.find((c) => c.id === Number(item.dataset.clienteId)) || null;
+  selectedCliente = clienteSearchResults.find(
+    (c) => Number(c.id) === Number(item.dataset.clienteId)
+  ) || null;
   if (!selectedCliente) {
     return;
   }
