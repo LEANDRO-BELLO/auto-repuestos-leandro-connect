@@ -1,14 +1,16 @@
-const { get, all, run } = require('../database/connection');
+﻿const { get, all, run } = require('../database/connection');
 const { generateQrCodeValue } = require('../utils/qr-code');
 
 async function generateCodigo() {
-  const row = await get(
-    "SELECT codigo FROM vehiculos WHERE codigo LIKE 'VEH-%' ORDER BY CAST(SUBSTR(codigo, 5) AS INTEGER) DESC LIMIT 1"
-  );
+  const rows = await all("SELECT codigo FROM vehiculos WHERE codigo LIKE 'VEH-%'");
 
-  if (!row) return 'VEH-0001';
+  const numeros = rows
+    .map((row) => String(row.codigo || '').match(/^VEH-(\d{4})$/))
+    .filter(Boolean)
+    .map((match) => Number(match[1]));
 
-  const next = parseInt(row.codigo.replace('VEH-', ''), 10) + 1;
+  const next = numeros.length ? Math.max(...numeros) + 1 : 1;
+
   return `VEH-${String(next).padStart(4, '0')}`;
 }
 
@@ -42,7 +44,7 @@ function mapVehiculo(row) {
 
 async function syncVehiculoRailway(vehiculo) {
   try {
-    const response = await fetch("https://auto-repuestos-leandro-connect-production.up.railway.app/api/sync/vehiculo", {
+    const response = await fetch("https://arlc-central-api-production.up.railway.app/api/sync/vehiculo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -65,9 +67,8 @@ async function syncVehiculoRailway(vehiculo) {
     });
 
     const texto = await response.text();
-    console.log("RESPOSTA RAILWAY:", response.status, texto);
   } catch (err) {
-    console.error("No se pudo sincronizar el vehículo:", err.message);
+    console.error("No se pudo sincronizar el vehÃ­culo:", err.message);
   }
 }
 const BASE_SELECT = `
@@ -84,7 +85,7 @@ async function listVehiculos(search = '') {
   const term = search.trim();
 
   if (!term) {
-    const rows = await all(`${BASE_SELECT} ORDER BY v.placa COLLATE NOCASE ASC`);
+    const rows = await all(`${BASE_SELECT} ORDER BY LOWER(v.placa) ASC`);
     return rows.map(mapVehiculo);
   }
 
@@ -96,7 +97,7 @@ async function listVehiculos(search = '') {
         OR v.modelo LIKE ?
         OR v.codigo LIKE ?
         OR c.nombre LIKE ?
-     ORDER BY v.placa COLLATE NOCASE ASC`,
+     ORDER BY LOWER(v.placa) ASC`,
     [like, like, like, like, like]
   );
 
@@ -139,7 +140,7 @@ async function createVehiculo(data) {
   );
 
   if (placaExistente) {
-    return { ok: false, error: 'Ya existe un vehículo con esa placa.' };
+    return { ok: false, error: 'Ya existe un vehÃ­culo con esa placa.' };
   }
 
   const codigo = await generateCodigo();
@@ -181,7 +182,7 @@ async function createVehiculo(data) {
 async function updateVehiculo(id, data) {
   const existing = await getVehiculo(id);
 
-  if (!existing) return { ok: false, error: 'Vehículo no encontrado.' };
+  if (!existing) return { ok: false, error: 'VehÃ­culo no encontrado.' };
 
   const placa = data.placa?.trim();
   const clienteId = data.clienteId;
@@ -195,7 +196,7 @@ async function updateVehiculo(id, data) {
   );
 
   if (placaExistente) {
-    return { ok: false, error: 'Ya existe un vehículo con esa placa.' };
+    return { ok: false, error: 'Ya existe un vehÃ­culo con esa placa.' };
   }
 
   const anio = data.anio ? parseInt(data.anio, 10) : null;
@@ -241,7 +242,7 @@ async function updateVehiculo(id, data) {
 async function deleteVehiculo(id) {
   const existing = await getVehiculo(id);
 
-  if (!existing) return { ok: false, error: 'Vehículo no encontrado.' };
+  if (!existing) return { ok: false, error: 'VehÃ­culo no encontrado.' };
 
   await run('DELETE FROM vehiculos WHERE id = ?', [id]);
   return { ok: true };
@@ -250,7 +251,7 @@ async function deleteVehiculo(id) {
 async function recordEtiquetaPrint(id) {
   const existing = await getVehiculo(id);
 
-  if (!existing) return { ok: false, error: 'Vehículo no encontrado.' };
+  if (!existing) return { ok: false, error: 'VehÃ­culo no encontrado.' };
 
   await run(
     `UPDATE vehiculos SET ultima_impressao_qr = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
@@ -276,3 +277,11 @@ module.exports = {
   deleteVehiculo,
   recordEtiquetaPrint
 };
+
+
+
+
+
+
+
+
