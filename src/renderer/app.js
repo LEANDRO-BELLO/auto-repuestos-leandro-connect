@@ -22,6 +22,7 @@ async function handleLogin(credentials) {
 
 function handleLogout() {
   currentUser = null;
+  window.api.logout();
   renderLoginPage({ onSubmit: handleLogin });
 }
 

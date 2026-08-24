@@ -1,9 +1,7 @@
 const { get } = require('../database/connection');
+const { verifyPassword } = require('../utils/password');
+const { mapUsuario, isActiveValue } = require('./usuarios.service');
 
-/**
- * Servicio de autenticación.
- * Punto de extensión para reglas de negocio futuras (hash, bloqueo, auditoría, etc.).
- */
 async function login({ usuario, password }) {
   if (!usuario?.trim() || !password?.trim()) {
     return {
@@ -12,21 +10,39 @@ async function login({ usuario, password }) {
     };
   }
 
-  const user = await get(
-    `SELECT id, nombre, usuario, perfil
+  const row = await get(
+    `SELECT id, nombre, usuario, password, perfil, whatsapp, activo
      FROM usuarios
-     WHERE usuario = ? AND password = ? AND activo = 1`,
-    [usuario.trim(), password.trim()]
+     WHERE usuario = ?`,
+    [usuario.trim()]
   );
 
-  if (!user) {
+  if (!row) {
     return {
       ok: false,
       error: 'Usuario o contraseña incorrectos.'
     };
   }
 
-  return { ok: true, user };
+  if (!isActiveValue(row.activo)) {
+    return {
+      ok: false,
+      error: 'Este usuario está inactivo.'
+    };
+  }
+
+  const valid = await verifyPassword(password.trim(), row.password);
+  if (!valid) {
+    return {
+      ok: false,
+      error: 'Usuario o contraseña incorrectos.'
+    };
+  }
+
+  return {
+    ok: true,
+    user: mapUsuario(row)
+  };
 }
 
 module.exports = { login };

@@ -1,7 +1,18 @@
 const fs = require('fs');
 const path = require('path');
-const { ensureDataDir, getDatabase, closeDatabase, get, run } = require('./connection');
+const {
+  ensureDataDir,
+  getDatabase,
+  closeDatabase,
+  get,
+  run,
+  useRemoteApi
+} = require('./connection');
 const logger = require('../utils/logger');
+const { hashPasswordSync } = require('../utils/password');
+
+const ADMIN_USUARIO = 'admin';
+const ADMIN_PASSWORD = 'admin';
 
 const SCHEMA_VERSION = 15;
 
@@ -68,31 +79,68 @@ async function getCurrentSchemaVersion() {
   return get('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1');
 }
 
+async function ensureWhatsappColumn() {
+  try {
+    await run('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS whatsapp TEXT');
+  } catch (error) {
+    logger.info(`Columna whatsapp no modificada: ${error.message}`);
+  }
+}
+
+async function ensureAdminUser() {
+  const existing = await get(
+    'SELECT id FROM usuarios WHERE usuario = ?',
+    [ADMIN_USUARIO]
+  );
+
+  if (existing) {
+    return;
+  }
+
+  await run(
+    `INSERT INTO usuarios (nombre, usuario, password, perfil, activo, whatsapp)
+     VALUES (?, ?, ?, 'Administrador', 1, NULL)`,
+    ['Administrador', ADMIN_USUARIO, hashPasswordSync(ADMIN_PASSWORD)]
+  );
+}
+
+async function ensureUsuariosRuntime() {
+  await ensureWhatsappColumn();
+  await ensureAdminUser();
+}
+
 async function initializeDatabase() {
+  if (useRemoteApi) {
+    logger.info('Modo internet: PostgreSQL vía API. No se aplican migraciones SQLite.');
+    await ensureUsuariosRuntime();
+    logger.info('Esquema de usuarios verificado en API/PostgreSQL.');
+    return;
+  }
+
   ensureDataDir();
   getDatabase();
 
   const currentVersion = (await getCurrentSchemaVersion())?.version ?? 0;
 
-  if (currentVersion >= SCHEMA_VERSION) {
+  if (currentVersion < SCHEMA_VERSION) {
+    for (const migration of MIGRATIONS) {
+      if (migration.version <= currentVersion) {
+        continue;
+      }
+
+      logger.info(`Aplicando migración v${migration.version}...`);
+      await applySchemaFile(migration.file);
+      await run('INSERT OR IGNORE INTO schema_version (version) VALUES (?)', [migration.version]);
+
+      if (migration.seed) {
+        await seedInitialData();
+      }
+    }
+  } else {
     logger.info('Base de datos ya inicializada.');
-    return;
   }
 
-  for (const migration of MIGRATIONS) {
-    if (migration.version <= currentVersion) {
-      continue;
-    }
-
-    logger.info(`Aplicando migración v${migration.version}...`);
-    await applySchemaFile(migration.file);
-    await run('INSERT OR IGNORE INTO schema_version (version) VALUES (?)', [migration.version]);
-
-    if (migration.seed) {
-      await seedInitialData();
-    }
-  }
-
+  await ensureUsuariosRuntime();
   logger.info('Base de datos inicializada correctamente.');
 }
 

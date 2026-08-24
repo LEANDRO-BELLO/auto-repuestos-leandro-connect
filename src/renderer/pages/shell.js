@@ -6,6 +6,7 @@ import { mountOrdenesPage, unmountOrdenesPage } from './ordenes.js';
 import { mountServiciosRealizadosPage, unmountServiciosRealizadosPage } from './servicios-realizados.js';
 import { mountProximosServiciosPage, unmountProximosServiciosPage } from './proximos-servicios.js';
 import { mountConfiguracionPage, unmountConfiguracionPage } from './configuracion.js';
+import { mountUsuariosPage, unmountUsuariosPage } from './usuarios.js';
 import { abrirHistorialVehiculo } from './historial-vehiculo-qr.js';
 import {
   mountAgendamientosPage,
@@ -21,7 +22,8 @@ const MENU_ITEMS = [
   { id: 'servicios', label: 'Servicios Realizados', icon: 'check' },
   { id: 'proximos', label: 'Próximos Servicios', icon: 'calendar' },
   { id: 'empresa', label: 'Empresa', icon: 'building' },
-  { id: 'config', label: 'Configuración', icon: 'settings' }
+  { id: 'config', label: 'Configuración', icon: 'settings' },
+  { id: 'usuarios', label: 'Usuarios', icon: 'userCog', adminOnly: true }
 ];
 
 const PAGE_HEADERS = {
@@ -33,7 +35,8 @@ const PAGE_HEADERS = {
   servicios: { title: 'Servicios Realizados', showDate: false },
   proximos: { title: 'Próximos Servicios', showDate: false },
   empresa: { title: 'Empresa', showDate: false },
-  config: { title: 'Configuración', showDate: false }
+  config: { title: 'Configuración', showDate: false },
+  usuarios: { title: 'Usuarios', showDate: false }
 };
 
 const ICONS = {
@@ -44,7 +47,8 @@ const ICONS = {
   check: '<path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
   calendar: '<rect x="4" y="5" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
   building: '<path d="M4 20V8l8-4 8 4v12H4zM9 20v-5h6v5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>',
-  settings: '<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'
+  settings: '<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  userCog: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M16 11h6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 
 function svgIcon(name) {
@@ -69,8 +73,16 @@ function formatTimeParaguay(date = new Date()) {
   }).format(date);
 }
 
-function renderNavItems(activePage) {
-  return MENU_ITEMS.map((item) => `
+function isAdminUser(user) {
+  return user?.perfil === 'Administrador';
+}
+
+function getVisibleMenuItems(user) {
+  return MENU_ITEMS.filter((item) => !item.adminOnly || isAdminUser(user));
+}
+
+function renderNavItems(activePage, user) {
+  return getVisibleMenuItems(user).map((item) => `
     <li>
       <button
         type="button"
@@ -139,6 +151,10 @@ async function navigateTo(pageId, navigationDetail = {}) {
     return;
   }
 
+  if (pageId === 'usuarios' && !isAdminUser(shellState.user)) {
+    return;
+  }
+
   const previousPage = shellState.currentPage;
 
   try {
@@ -172,6 +188,10 @@ async function navigateTo(pageId, navigationDetail = {}) {
 
     if (previousPage === 'config' && pageId !== 'config') {
       unmountConfiguracionPage();
+    }
+
+    if (previousPage === 'usuarios' && pageId !== 'usuarios') {
+      unmountUsuariosPage();
     }
 
     updateNavActive(pageId);
@@ -209,6 +229,10 @@ async function navigateTo(pageId, navigationDetail = {}) {
       case 'config':
         contentEl.innerHTML = '';
         await mountConfiguracionPage(contentEl);
+        break;
+      case 'usuarios':
+        contentEl.innerHTML = '';
+        await mountUsuariosPage(contentEl);
         break;
         case 'historial-vehiculo-qr':
           contentEl.innerHTML = '';
@@ -254,9 +278,10 @@ function bindNavigation() {
 
 export function renderAppShell({ user, empresa, onLogout, page = 'inicio' }) {
   const root = document.getElementById('app-root');
+  const initialPage = page === 'usuarios' && !isAdminUser(user) ? 'inicio' : page;
 
   shellState = {
-    currentPage: page,
+    currentPage: initialPage,
     user,
     empresa,
     onLogout,
@@ -277,7 +302,7 @@ export function renderAppShell({ user, empresa, onLogout, page = 'inicio' }) {
 
         <nav class="dashboard-nav">
           <ul class="dashboard-nav__list">
-            ${renderNavItems(page)}
+            ${renderNavItems(initialPage, user)}
           </ul>
         </nav>
 
@@ -344,7 +369,7 @@ export function renderAppShell({ user, empresa, onLogout, page = 'inicio' }) {
     const target = event.detail?.page;
     if (target) navigateTo(target, event.detail || {});
   });
-  navigateTo(page);
+  navigateTo(initialPage);
 
   window.api.getVersion().then((version) => {
     const versionEl = root.querySelector('#dashboard-version');

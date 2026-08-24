@@ -1,16 +1,61 @@
 const { ipcMain } = require('electron');
-const { authService, empresaService, clientesService, vehiculosService, ordenesService, serviciosRealizadosService, proximosServiciosService, configEtiquetaService, agendamientosService, dashboardService } = require('../../services');
+const { authService, empresaService, clientesService, vehiculosService, ordenesService, serviciosRealizadosService, proximosServiciosService, configEtiquetaService, agendamientosService, dashboardService, usuariosService } = require('../../services');
 const logger = require('../../utils/logger');
+
+let currentSession = null;
+
+function publicUser(user) {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    nombre: user.nombre,
+    usuario: user.usuario,
+    perfil: user.perfil,
+    whatsapp: user.whatsapp || '',
+    activo: user.activo
+  };
+}
+
+function requireAdmin() {
+  if (!currentSession) {
+    return { ok: false, error: 'Debe iniciar sesión.' };
+  }
+
+  if (currentSession.perfil !== 'Administrador') {
+    return { ok: false, error: 'No autorizado.' };
+  }
+
+  return null;
+}
 
 function registerIpcHandlers() {
   ipcMain.handle('auth:login', async (_event, credentials) => {
     try {
-      return await authService.login(credentials);
+      const result = await authService.login(credentials);
+
+      if (result.ok) {
+        currentSession = publicUser(result.user);
+        return { ok: true, user: currentSession };
+      }
+
+      currentSession = null;
+      return result;
     } catch (error) {
       logger.error('Error en auth:login', error);
+      currentSession = null;
       return { ok: false, error: 'No se pudo iniciar sesión. Intente nuevamente.' };
     }
   });
+
+  ipcMain.handle('auth:logout', async () => {
+    currentSession = null;
+    return { ok: true };
+  });
+
+  ipcMain.handle('auth:currentUser', async () => publicUser(currentSession));
 
   ipcMain.handle('empresa:get', async () => {
     try {
@@ -285,6 +330,86 @@ function registerIpcHandlers() {
     } catch (error) {
       logger.error('Error en configEtiqueta:update', error);
       return { ok: false, error: 'No se pudo guardar la configuración.' };
+    }
+  });
+
+  ipcMain.handle('usuarios:list', async (_event, search) => {
+    const denied = requireAdmin();
+    if (denied) {
+      return [];
+    }
+
+    try {
+      return await usuariosService.listUsuarios(search);
+    } catch (error) {
+      logger.error('Error en usuarios:list', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('usuarios:get', async (_event, id) => {
+    const denied = requireAdmin();
+    if (denied) {
+      return null;
+    }
+
+    try {
+      return await usuariosService.getUsuario(id);
+    } catch (error) {
+      logger.error('Error en usuarios:get', error);
+      return null;
+    }
+  });
+
+  ipcMain.handle('usuarios:create', async (_event, data) => {
+    const denied = requireAdmin();
+    if (denied) {
+      return denied;
+    }
+
+    try {
+      return await usuariosService.createUsuario(data);
+    } catch (error) {
+      logger.error('Error en usuarios:create', error);
+      return { ok: false, error: 'No se pudo crear el usuario.' };
+    }
+  });
+
+  ipcMain.handle('usuarios:update', async (_event, id, data) => {
+    const denied = requireAdmin();
+    if (denied) {
+      return denied;
+    }
+
+    try {
+      const result = await usuariosService.updateUsuario(id, data, {
+        currentUserId: currentSession?.id
+      });
+
+      if (result.ok && currentSession && Number(id) === Number(currentSession.id)) {
+        currentSession = publicUser(await usuariosService.getUsuario(id)) || currentSession;
+      }
+
+      return result;
+    } catch (error) {
+      logger.error('Error en usuarios:update', error);
+      return { ok: false, error: 'No se pudo actualizar el usuario.' };
+    }
+  });
+
+  ipcMain.handle('usuarios:setActivo', async (_event, id, activo) => {
+    const denied = requireAdmin();
+    if (denied) {
+      return denied;
+    }
+
+    try {
+      return await usuariosService.setUsuarioActivo(id, activo, {
+        currentUserId: currentSession?.id
+      });
+    } catch (error) {
+      logger.error('Error en usuarios:setActivo', error);
+      return { ok: false, error: 'No se pudo cambiar el estado del usuario.' };
     }
   });
 }

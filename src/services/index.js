@@ -8,6 +8,7 @@ const proximosServiciosService = require('./proximos-servicios.service');
 const configEtiquetaService = require('./config-etiqueta.service');
 const agendamientosService = require('./agendamientos.service');
 const dashboardService = require('./dashboard.service');
+const usuariosService = require('./usuarios.service');
 
 module.exports = {
   authService,
@@ -19,5 +20,6 @@ module.exports = {
   proximosServiciosService,
   configEtiquetaService,
   agendamientosService,
-  dashboardService
+  dashboardService,
+  usuariosService
 };
