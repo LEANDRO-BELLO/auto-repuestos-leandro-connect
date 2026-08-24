@@ -1,6 +1,7 @@
-const { get, run } = require('../database/connection');
+﻿const { get, run } = require('../database/connection');
 const proximosServiciosService = require('./proximos-servicios.service');
 const agendamientosService = require('./agendamientos.service');
+const ordenesService = require('./ordenes.service');
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -8,7 +9,7 @@ function todayIso() {
 
 function within15Days(item) {
   if (item.estado === 'Vencido') return true;
-  if (item.estado !== 'Próximo') return false;
+  if (item.estado !== 'PrÃ³ximo') return false;
   if (!item.fechaVencimiento) return true;
   const today = new Date(`${todayIso()}T12:00:00`);
   const due = new Date(`${item.fechaVencimiento}T12:00:00`);
@@ -17,9 +18,10 @@ function within15Days(item) {
 }
 
 async function getDashboard() {
-  const [agendamientos, proximos] = await Promise.all([
+  const [agendamientos, proximos, ordenes] = await Promise.all([
     agendamientosService.listProximosAgendamientos(12),
-    proximosServiciosService.listProximosServicios({})
+    proximosServiciosService.listProximosServicios({}),
+    ordenesService.listOrdenes('')
   ]);
   const date = todayIso();
   const servicios = [];
@@ -28,7 +30,8 @@ async function getDashboard() {
     if (!aviso) servicios.push(item);
     if (servicios.length >= 20) break;
   }
-  return { agendamientos, servicios };
+  const ordenesAbiertas = ordenes.filter((orden) => orden.estado === 'Abierta' || orden.estado === 'En proceso').slice(0, 20);
+  return { agendamientos, servicios, ordenesAbiertas };
 }
 
 async function marcarAvisado(itemId) {
@@ -37,4 +40,8 @@ async function marcarAvisado(itemId) {
 }
 
 module.exports = { getDashboard, marcarAvisado };
+
+
+
+
 

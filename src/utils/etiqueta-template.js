@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { getRendererPath, getProjectRoot } = require('./paths');
@@ -87,7 +87,7 @@ function resolveEtiquetaBaseDataUrl() {
 
   return null;
 }
-/** PDF e preview via arquivo HTML: file:// preserva proporção sem inflar o documento. */
+/** PDF e preview via arquivo HTML: file:// preserva proporÃ§Ã£o sem inflar o documento. */
 function resolveLogoSrc() {
   return resolveEtiquetaBaseDataUrl() || resolveLogoFileUrl() || resolveLogoDataUrl() || LOGO_RELATIVE_SRC;
 }
@@ -163,7 +163,7 @@ function buildEtiquetaDocumentHtml({ config, vehiculo, qrDataUrl, tamano = '9x6'
 <html lang="es-PY">
 <head>
   <meta charset="UTF-8" />
-  <title>Etiqueta QR — ${String(vehiculo?.placa || '').replace(/[<>&"]/g, '')}</title>
+  <title>Etiqueta QR â€” ${String(vehiculo?.placa || '').replace(/[<>&"]/g, '')}</title>
   <style>${getEtiquetaStyles(tamano)}</style>
 </head>
 <body>
@@ -182,32 +182,32 @@ function escapeText(value) {
 
 function buildEtiquetaPreImpressaDocumentHtml({ vehiculo = {}, qrDataUrl, tamano = '9x6' }) {
   const page = getPageConfig(tamano);
-  const modelo = vehiculo.modelo || vehiculo.marca || 'VEHÍCULO';
+  const modelo = vehiculo.modelo || vehiculo.marca || 'VEHÃCULO';
   const chapa = vehiculo.placa || '';
   const motor = vehiculo.motor || '';
   return `<!DOCTYPE html>
-<html lang="es-PY"><head><meta charset="UTF-8" /><title>Impresión etiqueta QR</title>
+<html lang="es-PY"><head><meta charset="UTF-8" /><title>ImpresiÃ³n etiqueta QR</title>
 <style>
 @page{size:${page.css};margin:0}*{box-sizing:border-box}html,body{margin:0;width:${mmToCss(page.widthMm)};height:${mmToCss(page.heightMm)};overflow:hidden;background:#fff;font-family:Arial,sans-serif;-webkit-print-color-adjust:exact}
 /*
- * Sobreimpresión para la etiqueta física 90 × 60 mm.
- * Las coordenadas corresponden a los espacios vacíos del arte aprobado:
- * vehículo, chapa, motor y área azul del QR. No imprime fondo, logo ni marcos.
+ * SobreimpresiÃ³n para la etiqueta fÃ­sica 90 Ã— 60 mm.
+ * Las coordenadas corresponden a los espacios vacÃ­os del arte aprobado:
+ * vehÃ­culo, chapa, motor y Ã¡rea azul del QR. No imprime fondo, logo ni marcos.
  *
- * Para una calibración fina de impresora, alterar solamente --offset-x y
- * --offset-y. Los cuatro elementos se desplazan juntos sin deformar el diseño.
+ * Para una calibraciÃ³n fina de impresora, alterar solamente --offset-x y
+ * --offset-y. Los cuatro elementos se desplazan juntos sin deformar el diseÃ±o.
  */
 :root{--offset-x:0mm;--offset-y:0mm}
 .preprinted{position:relative;width:90mm;height:60mm;color:#000;transform:translate(var(--offset-x),var(--offset-y))}
 .preprinted__field{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;white-space:nowrap;line-height:1;font-family:Arial,sans-serif;font-weight:800;text-transform:uppercase}
-/* Centro exacto del rectángulo VEHÍCULO del fondo preimpreso. */
-.preprinted__vehicle{left:16.50mm;top:26.70mm;width:25.60mm;height:4.80mm;font-size:12pt}
-/* Centro exacto del rectángulo CHAPA del fondo preimpreso. */
-.preprinted__plate{left:16.50mm;top:35.05mm;width:25.60mm;height:4.85mm;font-size:12pt;letter-spacing:.25mm}
-/* Centro exacto del rectángulo MOTOR del fondo preimpreso. */
-.preprinted__motor{left:16.50mm;top:43.75mm;width:25.60mm;height:4.85mm;font-size:10.5pt}
-/* Área reservada exclusivamente al QR en el lado derecho. */
-.preprinted__qr{position:absolute;left:47.70mm;top:4.30mm;width:35.90mm;height:35.90mm;display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* Centro exacto del rectÃ¡ngulo VEHÃCULO del fondo preimpreso. */
+.preprinted__vehicle{left:14.50mm;top:27.20mm;width:25.60mm;height:3.95mm;font-size:12pt}
+/* Centro exacto del rectÃ¡ngulo CHAPA del fondo preimpreso. */
+.preprinted__plate{left:14.50mm;top:35.60mm;width:25.60mm;height:4.95mm;font-size:12pt;letter-spacing:.25mm}
+/* Centro exacto del rectÃ¡ngulo MOTOR del fondo preimpreso. */
+.preprinted__motor{left:14.50mm;top:44.45mm;width:25.60mm;height:4.80mm;font-size:10.5pt}
+/* Ãrea reservada exclusivamente al QR en el lado derecho. */
+.preprinted__qr{position:absolute;left:43.65mm;top:4.30mm;width:38.90mm;height:35.90mm;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .preprinted__qr img{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 </style></head><body><div class="preprinted"><div class="preprinted__field preprinted__vehicle">${escapeText(modelo)}</div><div class="preprinted__field preprinted__plate">${escapeText(chapa)}</div><div class="preprinted__field preprinted__motor">${escapeText(motor)}</div><div class="preprinted__qr">${qrDataUrl ? `<img src="${qrDataUrl}" alt="QR" />` : ''}</div></div></body></html>`;
 }
@@ -245,3 +245,4 @@ module.exports = {
   buildEtiquetaPreImpressaDocumentHtml,
   buildEtiquetaPreviewDocumentHtml
 };
+

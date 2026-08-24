@@ -10,7 +10,8 @@ const logger = require('../utils/logger');
 const {
   openEtiquetaPdfFromPayload,
   previewEtiquetaHtmlFromPayload,
-  downloadEtiquetaPdfFromPayload
+  downloadEtiquetaPdfFromPayload,
+  printEtiquetaDirectFromPayload
 } = require('./etiqueta-pdf');
 
 let lastPreviewHtmlPath = null;
@@ -55,7 +56,7 @@ async function buildVehiculoEtiquetaPayload(vehiculoId) {
   const tamanho =
     config.tamanoEtiqueta ||
     config.tamanhoEtiqueta ||
-    '10x7';
+    '9x6';
 
   return {
     ok: true,
@@ -182,7 +183,7 @@ function registerEtiquetaHandlers(ipcMain) {
         return built;
       }
 
-      const openResult = await openEtiquetaPdfFromPayload({ ...built.payload, preprinted: true });
+      const openResult = await printEtiquetaDirectFromPayload({ ...built.payload, preprinted: true });
       if (!openResult.ok) {
         return openResult;
       }
@@ -197,4 +198,6 @@ function registerEtiquetaHandlers(ipcMain) {
 }
 
 module.exports = { registerEtiquetaHandlers, getVehiculoQrDataUrl };
+
+
 

@@ -8,6 +8,7 @@ const SERVICIOS_KM_INDIVIDUAL = new Set([
   'aceite_caja_transferencia',
   'aceite_dif_del',
   'aceite_dif_tras',
+  'aceite_direccion',
   'fluido_radiador',
   'fluido_freno'
 ]);

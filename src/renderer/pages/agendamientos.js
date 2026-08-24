@@ -1,4 +1,4 @@
-import { escapeHtml } from '../utils/dom.js';
+﻿import { escapeHtml } from '../utils/dom.js';
 
 let root = null;
 let editingId = null;
@@ -6,7 +6,7 @@ let clientes = [];
 let vehiculos = [];
 
 function fmtDate(value) {
-  if (!value) return '—';
+  if (!value) return 'â€”';
   const [y, m, d] = value.split('-');
   return `${d}/${m}/${y}`;
 }
@@ -17,9 +17,9 @@ function rows(items) {
     const pending = a.estado === 'Pendiente';
     return `<tr>
       <td><strong>${fmtDate(a.fecha)}</strong><br>${escapeHtml(a.hora)}</td>
-      <td>${escapeHtml(a.clienteNombre)}</td>
-      <td>${escapeHtml(a.vehiculo_id ? ([a.marca, a.modelo].filter(Boolean).join(' ') || '—') : (a.vehiculo_descripcion || 'Vehículo sin registrar'))}<br><span class="dashboard-muted">${escapeHtml(a.vehiculo_id ? (a.placa || '') : 'Sin cadastro')}</span></td>
-      <td>${escapeHtml(a.observaciones || '—')}</td>
+      <td>${escapeHtml(a.clienteNombre || a.cliente_nombre || "")}<br><span class="dashboard-muted">${a.cliente_id ? "" : "Sin cadastro"}</span></td>
+      <td>${escapeHtml(a.vehiculo_id ? ([a.marca, a.modelo].filter(Boolean).join(' ') || 'â€”') : (a.vehiculo_descripcion || 'VehÃ­culo sin registrar'))}<br><span class="dashboard-muted">${escapeHtml(a.vehiculo_id ? (a.placa || '') : 'Sin cadastro')}</span></td>
+      <td>${escapeHtml(a.observaciones || 'â€”')}</td>
       <td><span class="agenda-badge agenda-badge--${a.estado.toLowerCase().replace(/\s+/g, '-')}">${escapeHtml(a.estado)}</span></td>
       <td><div class="agenda-actions">
         ${pending ? `<button data-action="reschedule" data-id="${a.id}">Remarcar</button><button data-action="start" data-id="${a.id}">Iniciar OT</button><button data-action="cancel" data-id="${a.id}">Cancelar</button>` : ''}
@@ -45,7 +45,7 @@ function modal(a = null) {
             ${a ? 'Remarcar Agendamiento' : 'Nuevo Agendamiento'}
           </h2>
 
-          <button type="button" data-action="close">×</button>
+          <button type="button" data-action="close">Ã—</button>
         </header>
 
         <form id="agenda-form">
@@ -61,7 +61,7 @@ function modal(a = null) {
                     value="rapido"
                     ${tipoRapido ? 'checked' : ''}
                   >
-                  Agendamiento rápido
+                  Agendamiento rÃ¡pido
                 </span>
 
                 <span>
@@ -92,7 +92,7 @@ function modal(a = null) {
                 </label>
 
                 <label>
-                  Teléfono / WhatsApp
+                  TelÃ©fono / WhatsApp
                   <input
                     type="text"
                     name="clienteTelefono"
@@ -101,7 +101,7 @@ function modal(a = null) {
                 </label>
 
                 <label class="agenda-full">
-                  Vehículo
+                  VehÃ­culo
                   <input
                     type="text"
                     name="vehiculoDescripcion"
@@ -142,7 +142,7 @@ function modal(a = null) {
                 </label>
 
                 <label>
-                  Vehículo
+                  VehÃ­culo
                   <select
                     name="vehiculoId"
                     id="agenda-vehiculo"
@@ -207,7 +207,7 @@ async function loadVehicles(clienteId, selectedId = null) {
   vehiculos = clienteId ? await window.api.listVehiculosByCliente(Number(clienteId)) : [];
   const select = root.querySelector('#agenda-vehiculo');
   if (!select) return;
-  select.innerHTML = '<option value="">Seleccionar...</option>' + vehiculos.map(v => `<option value="${v.id}" ${Number(selectedId) === v.id ? 'selected' : ''}>${escapeHtml([v.marca, v.modelo, v.placa].filter(Boolean).join(' — '))}</option>`).join('');
+  select.innerHTML = '<option value="">Seleccionar...</option>' + vehiculos.map(v => `<option value="${v.id}" ${Number(selectedId) === v.id ? 'selected' : ''}>${escapeHtml([v.marca, v.modelo, v.placa].filter(Boolean).join(' â€” '))}</option>`).join('');
 }
 
 async function open(a = null) {
@@ -235,8 +235,8 @@ async function click(event) {
   if (b.dataset.action === 'new') return open();
   if (b.dataset.action === 'close') return close();
   if (b.dataset.action === 'reschedule') return open(await window.api.getAgendamiento(id));
-  if (b.dataset.action === 'cancel') { if (confirm('¿Cancelar este agendamiento?')) { await window.api.setEstadoAgendamiento(id, 'Cancelado'); await load(); } return; }
-  if (b.dataset.action === 'delete') { if (confirm('¿Eliminar definitivamente este agendamiento?')) { await window.api.deleteAgendamiento(id); await load(); } return; }
+  if (b.dataset.action === 'cancel') { if (confirm('Â¿Cancelar este agendamiento?')) { await window.api.setEstadoAgendamiento(id, 'Cancelado'); await load(); } return; }
+  if (b.dataset.action === 'delete') { if (confirm('Â¿Eliminar definitivamente este agendamiento?')) { await window.api.deleteAgendamiento(id); await load(); } return; }
   if (b.dataset.action === 'start') {
     window.dispatchEvent(new CustomEvent('arl:navigate', { detail: { page: 'ordenes', agendamientoId: id } }));
   }
@@ -310,7 +310,7 @@ async function submit(event) {
 
     if (!payload.vehiculoDescripcion) {
       root.querySelector('#agenda-error').textContent =
-        'Ingrese la descripción del vehículo.';
+        'Ingrese la descripciÃ³n del vehÃ­culo.';
       return;
     }
   } else {
@@ -328,7 +328,7 @@ async function submit(event) {
 
     if (!payload.vehiculoId) {
       root.querySelector('#agenda-error').textContent =
-        'Seleccione un vehículo.';
+        'Seleccione un vehÃ­culo.';
       return;
     }
   }
@@ -349,8 +349,8 @@ async function submit(event) {
 
 export async function mountAgendamientosPage(container) {
   root = container;
-  root.innerHTML = `<div class="agenda-page"><div class="agenda-toolbar"><button class="btn-primary" data-action="new">Nuevo Agendamiento</button><input id="agenda-search" type="search" placeholder="Buscar cliente, vehículo o chapa..."></div>
-  <section class="dashboard-panel"><div class="dashboard-panel__body"><table class="dashboard-table"><thead><tr><th>Fecha / Hora</th><th>Cliente</th><th>Vehículo</th><th>Observaciones</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="agenda-body"></tbody></table></div></section></div>`;
+  root.innerHTML = `<div class="agenda-page"><div class="agenda-toolbar"><button class="btn-primary" data-action="new">Nuevo Agendamiento</button><input id="agenda-search" type="search" placeholder="Buscar cliente, vehÃ­culo o chapa..."></div>
+  <section class="dashboard-panel"><div class="dashboard-panel__body"><table class="dashboard-table"><thead><tr><th>Fecha / Hora</th><th>Cliente</th><th>VehÃ­culo</th><th>Observaciones</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="agenda-body"></tbody></table></div></section></div>`;
   root.addEventListener('click', click); root.addEventListener('change', change); root.addEventListener('submit', submit);
   root.querySelector('#agenda-search').addEventListener('input', (e) => load(e.target.value));
   await load();
@@ -360,3 +360,4 @@ export function unmountAgendamientosPage() {
   if (root) { root.removeEventListener('click', click); root.removeEventListener('change', change); root.removeEventListener('submit', submit); }
   root = null;
 }
+

@@ -21,6 +21,7 @@ const SERVICIOS = {
   aceite_caja_transferencia: 'Cambio de aceite caja de transferencia',
   aceite_dif_del: 'Cambio de aceite diferencial delantero',
   aceite_dif_tras: 'Cambio de aceite diferencial trasero',
+  aceite_direccion: 'Cambio de aceite de dirección',
   fluido_radiador: 'Cambio de fluido de radiador',
   fluido_freno: 'Cambio de fluido de freno',
   pastilla_freno_delantera: 'Cambio de pastilla de freno delantera',

@@ -27,6 +27,7 @@ const SERVICIOS_CATALOGO = [
     id: 'aceite_dif_tras',
     label: 'Cambio de aceite diferencial trasero'
   },
+  { id: 'aceite_direccion', label: 'Cambio de aceite de dirección' },
   { id: 'fluido_radiador', label: 'Cambio de fluido de radiador' },
   { id: 'fluido_freno', label: 'Cambio de fluido de freno' },
   { id: 'pastilla_freno_delantera', label: 'Cambio de pastilla de freno delantera' },

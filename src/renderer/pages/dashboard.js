@@ -1,9 +1,9 @@
-import { escapeHtml } from '../utils/dom.js';
+﻿import { escapeHtml } from '../utils/dom.js';
 
 let root = null;
 
 function fmtDate(value) {
-  if (!value) return '—';
+  if (!value) return 'â€”';
   const [y, m, d] = value.split('-');
   return y && m && d ? `${d}/${m}/${y}` : value;
 }
@@ -23,33 +23,22 @@ function appointmentsRows(items) {
   return items.map((item) => `
     <tr>
       <td><strong>${fmtDate(item.fecha)}</strong><br><span class="dashboard-muted">${escapeHtml(item.hora)}</span></td>
-      <td>${escapeHtml(item.clienteNombre)}</td>
+      <td>${escapeHtml(item.clienteNombre || item.cliente_nombre || "")}<br><span class="dashboard-muted">${(item.clienteId || item.cliente_id) ? "" : "Sin cadastro"}</span></td>
       <td>${escapeHtml(vehicle(item))}<br><span class="dashboard-muted">${escapeHtml(item.placa || (item.vehiculo_id ? '' : 'Sin cadastro'))}</span></td>
       <td><span class="dashboard-status dashboard-status--pending">${escapeHtml(item.estado)}</span></td>
       <td><button class="dashboard-action" data-action="start-ot" data-id="${item.id}">Iniciar OT</button></td>
     </tr>`).join('');
 }
 
-function servicesRows(items) {
-  if (!items.length) return '<tr><td colspan="6" class="dashboard-table__empty">No hay servicios vencidos ni próximos en los siguientes 15 días.</td></tr>';
-  return items.map((item) => `
-    <tr class="dashboard-service-row dashboard-service-row--${item.estado === 'Vencido' ? 'overdue' : 'soon'}">
-      <td>${escapeHtml(item.clienteNombre)}</td>
-      <td>${escapeHtml(vehicle(item))}<br><span class="dashboard-muted">${escapeHtml(item.vehiculoPlaca)}</span></td>
-      <td>${escapeHtml(item.servicioLabel)}</td>
-      <td>${item.fechaVencimiento ? fmtDate(item.fechaVencimiento) : `${new Intl.NumberFormat('es-PY').format(item.proximoKm || 0)} km`}</td>
-      <td><span class="dashboard-status dashboard-status--${item.estado === 'Vencido' ? 'overdue' : 'soon'}">${escapeHtml(item.estado)}</span></td>
-      <td>
-        <button class="dashboard-whatsapp" data-action="whatsapp" data-id="${escapeHtml(item.id)}"
-          data-phone="${escapeHtml(item.clienteWhatsapp || '')}"
-          data-client="${escapeHtml(item.clienteNombre)}"
-          data-vehicle="${escapeHtml(vehicle(item))}"
-          data-plate="${escapeHtml(item.vehiculoPlaca)}"
-          data-service="${escapeHtml(item.servicioLabel)}"
-          data-due="${escapeHtml(item.fechaVencimiento ? fmtDate(item.fechaVencimiento) : `${item.proximoKm || ''} km`)}"
-          title="Abrir WhatsApp" aria-label="Abrir WhatsApp">WhatsApp</button>
-      </td>
-    </tr>`).join('');
+function ordenesRows(items) {
+  if (!items.length) return '<tr><td colspan="5" class="dashboard-table__empty">No hay ordenes abiertas.</td></tr>';
+  return items.map((item) => `<tr>
+    <td><strong>${escapeHtml(item.numeroOs || '')}</strong></td>
+    <td>${fmtDate(item.fecha)}</td>
+    <td>${escapeHtml(item.clienteNombre || '')}</td>
+    <td>${escapeHtml(vehicle(item))}<br><span class="dashboard-muted">${escapeHtml(item.vehiculoPlaca || '')}</span></td>
+    <td><span class="dashboard-status dashboard-status--pending">${escapeHtml(item.estado || '')}</span></td>
+  </tr>`).join('');
 }
 
 function template() {
@@ -58,24 +47,18 @@ function template() {
       <section class="dashboard-panel dashboard-home__panel">
         <header class="dashboard-panel__header"><h2 class="dashboard-panel__title">Agendamientos</h2></header>
         <div class="dashboard-panel__body">
-          <table class="dashboard-table"><thead><tr><th>Fecha / Hora</th><th>Cliente</th><th>Vehículo</th><th>Estado</th><th>Acción</th></tr></thead>
+    <table class="dashboard-table"><thead><tr><th>Fecha / Hora</th><th>Cliente</th><th>Vehículo</th><th>Estado</th><th>Acción</th></tr></thead>
           <tbody id="dashboard-appointments"><tr><td colspan="5" class="dashboard-table__empty">Cargando...</td></tr></tbody></table>
         </div>
       </section>
-      <section class="dashboard-panel dashboard-home__panel">
-        <header class="dashboard-panel__header"><h2 class="dashboard-panel__title">Servicios vencidos y próximos (15 días)</h2></header>
-        <div class="dashboard-panel__body">
-          <table class="dashboard-table"><thead><tr><th>Cliente</th><th>Vehículo / Chapa</th><th>Servicio</th><th>Vencimiento</th><th>Estado</th><th>Contacto</th></tr></thead>
-          <tbody id="dashboard-services"><tr><td colspan="6" class="dashboard-table__empty">Cargando...</td></tr></tbody></table>
-        </div>
-      </section>
+      <section class="dashboard-panel dashboard-home__panel"><header class="dashboard-panel__header"><h2 class="dashboard-panel__title">&Oacute;rdenes abiertas</h2></header><div class="dashboard-panel__body"><table class="dashboard-table"><thead><tr><th>N&deg; OS</th><th>Fecha</th><th>Cliente</th><th>Veh&iacute;culo / Chapa</th><th>Estado</th></tr></thead><tbody id="dashboard-orders"><tr><td colspan="5" class="dashboard-table__empty">Cargando...</td></tr></tbody></table></div></section>
     </div>`;
 }
 
 async function load() {
   const data = await window.api.getDashboard();
   root.querySelector('#dashboard-appointments').innerHTML = appointmentsRows(data.agendamientos || []);
-  root.querySelector('#dashboard-services').innerHTML = servicesRows(data.servicios || []);
+  root.querySelector('#dashboard-orders').innerHTML = ordenesRows(data.ordenesAbiertas || []);
 }
 
 async function onClick(event) {
@@ -113,3 +96,5 @@ export function unmountDashboardPage() {
   if (root) root.removeEventListener('click', onClick);
   root = null;
 }
+
+

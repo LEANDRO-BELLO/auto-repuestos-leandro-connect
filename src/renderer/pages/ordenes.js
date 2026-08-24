@@ -21,6 +21,7 @@ const SERVICIOS_CON_KM = new Set([
   'aceite_caja_transferencia',
   'aceite_dif_del',
   'aceite_dif_tras',
+  'aceite_direccion',
   'fluido_radiador',
   'fluido_freno'
 ]);
@@ -36,6 +37,7 @@ const SERVICIOS_CATALOGO = [
   { id: 'aceite_caja_transferencia', label: 'Cambio de aceite caja de transferencia' },
   { id: 'aceite_dif_del', label: 'Cambio de aceite diferencial delantero' },
   { id: 'aceite_dif_tras', label: 'Cambio de aceite diferencial trasero' },
+  { id: 'aceite_direccion', label: 'Cambio de aceite de dirección' },
   { id: 'fluido_radiador', label: 'Cambio de fluido de radiador' },
   { id: 'fluido_freno', label: 'Cambio de fluido de freno' },
   { id: 'pastilla_freno_delantera', label: 'Cambio de pastilla de freno delantera' },

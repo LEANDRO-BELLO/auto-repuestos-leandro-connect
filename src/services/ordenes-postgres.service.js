@@ -43,6 +43,10 @@ const {
       label: 'Cambio de aceite diferencial trasero'
     },
     {
+      id: 'aceite_direccion',
+      label: 'Cambio de aceite de dirección'
+    },
+    {
       id: 'fluido_radiador',
       label: 'Cambio de fluido de radiador'
     },

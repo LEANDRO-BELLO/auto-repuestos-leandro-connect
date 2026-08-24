@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { app, shell, dialog, BrowserWindow } = require('electron');
 const { pathToFileURL } = require('url');
@@ -97,7 +97,7 @@ async function openEtiquetaPdfFromPayload(payload = {}) {
   return { ok: true, filePath: tempPath, tamano };
 }
 
-/** Preview HTML — mesmo CSS do modelo aprobado. */
+/** Preview HTML â€” mesmo CSS do modelo aprobado. */
 async function previewEtiquetaHtmlFromPayload(payload = {}) {
   const { tamano, html } = buildEtiquetaHtmlFromPayload(payload);
   const tempPath = writeTempFile(html, 'etiqueta-preview', 'html');
@@ -138,11 +138,62 @@ if (openError) {
 
 return { ok: true, filePath };
 }
+
+async function printEtiquetaDirectFromPayload(payload = {}) {
+  const { tamano, html } = buildEtiquetaHtmlFromPayload(payload);
+  const page = getPageConfig(tamano);
+  const htmlPath = writeTempFile(html, 'etiqueta-print', 'html');
+
+  const win = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      sandbox: false
+    }
+  });
+
+  try {
+    await win.loadURL(pathToFileURL(htmlPath).href);
+
+    await new Promise((resolve, reject) => {
+      win.webContents.print(
+        {
+          silent: true,
+          deviceName: 'Honeywell PC42E-T (203 dpi) - DP',
+          printBackground: true,
+          margins: { marginType: 'none' },
+          pageSize: {
+            width: Math.round(page.widthMm * 1000),
+            height: Math.round(page.heightMm * 1000)
+          }
+        },
+        (success, failureReason) => {
+          if (!success) {
+            reject(new Error(failureReason || 'No se pudo imprimir la etiqueta.'));
+            return;
+          }
+
+          resolve();
+        }
+      );
+    });
+
+    return { ok: true, tamano };
+  } finally {
+    if (!win.isDestroyed()) {
+      win.close();
+    }
+  }
+}
 module.exports = {
   parsePdfMediaBoxMm,
   buildEtiquetaHtmlFromPayload,
   buildEtiquetaPdfFromPayload,
   openEtiquetaPdfFromPayload,
   previewEtiquetaHtmlFromPayload,
-  downloadEtiquetaPdfFromPayload
+  downloadEtiquetaPdfFromPayload,
+  printEtiquetaDirectFromPayload
 };
+
+
+
+
