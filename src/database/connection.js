@@ -105,7 +105,15 @@ function getDatabase() {
   return dbInstance;
 }
 
+let perfRequestSeq = 0;
+
+function sqlPreview(sql) {
+  return String(sql || '').replace(/\s+/g, ' ').trim().slice(0, 140);
+}
+
 async function remoteRequest(operation, sql, params = []) {
+  const seq = ++perfRequestSeq;
+  const t0 = performance.now();
   const response = await fetch(
     `${API_URL}/api/sql/${operation}`,
     {
@@ -129,13 +137,25 @@ async function remoteRequest(operation, sql, params = []) {
     payload = { error: text || 'Respuesta inválida.' };
   }
 
+  const ms = Math.round(performance.now() - t0);
+
   if (!response.ok || payload.ok === false) {
+    console.log(`[PERF] api.request #${seq} ${operation} FAIL ${ms}ms | ${sqlPreview(sql)}`);
+    console.log(`[PERF] db.query #${seq} FAIL ${ms}ms | ${sqlPreview(sql)}`);
     const error = new Error(
       payload.error || `Error HTTP ${response.status}`
     );
     error.code = payload.code;
     throw error;
   }
+
+  const rowHint = Array.isArray(payload.result)
+    ? ` rows=${payload.result.length}`
+    : payload.result
+      ? ' row=1'
+      : ' row=0';
+  console.log(`[PERF] api.request #${seq} ${operation} ${ms}ms${rowHint} | ${sqlPreview(sql)}`);
+  console.log(`[PERF] db.query #${seq} ${operation} ${ms}ms${rowHint} | ${sqlPreview(sql)}`);
 
   return payload.result;
 }

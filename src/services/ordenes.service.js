@@ -135,6 +135,17 @@ async function listOrdenes(search = '') {
   return rows.map(mapOrden);
 }
 
+async function listOrdenesAbiertasDashboard() {
+  const rows = await all(
+    `${BASE_SELECT}
+     WHERE o.estado IN ('Abierta', 'En proceso')
+     ORDER BY o.fecha DESC, o.id DESC
+     LIMIT 20`
+  );
+
+  return rows.map(mapOrden);
+}
+
 async function getServiciosByOrden(ordenId) {
   const rows = await all(
     `SELECT servicio, proximo_km
@@ -664,6 +675,7 @@ async function deleteOrden(id) {
 
 module.exports = {
   listOrdenes,
+  listOrdenesAbiertasDashboard,
   getOrden,
   createOrden,
   updateOrden,

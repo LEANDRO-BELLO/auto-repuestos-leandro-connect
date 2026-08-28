@@ -159,6 +159,7 @@ function sortItems(items) {
 async function listProximosServicios(filters = {}) {
   const search = (filters.search || '').trim();
   const estado = (filters.estado || '').trim();
+  const t0 = performance.now();
 
   const rows = await all(
     `SELECT o.id AS orden_id, o.numero_os, o.kilometraje, o.proximo_km, o.fecha_vencimiento,
@@ -170,22 +171,53 @@ async function listProximosServicios(filters = {}) {
      WHERE o.estado = 'Finalizada'
      ORDER BY o.fecha DESC, o.id DESC`
   );
+  console.log(`[PERF] proximosServicios.ordenes-finalizadas ${Math.round(performance.now() - t0)}ms rows=${rows.length} (sem LIMIT)`);
 
   const seenVehiculos = new Set();
-  let items = [];
-
+  const selected = [];
   for (const row of rows) {
     if (seenVehiculos.has(row.vehiculo_id)) {
       continue;
     }
 
     seenVehiculos.add(row.vehiculo_id);
+    selected.push(row);
+  }
 
+  const serviciosByOrden = new Map();
+  const tLote = performance.now();
+  let loteQueries = 0;
+  let loteRows = 0;
+
+  if (selected.length > 0) {
+    const ids = selected.map((row) => row.orden_id);
+    const placeholders = ids.map(() => '?').join(', ');
+    loteQueries = 1;
     const serviciosRows = await all(
-      'SELECT servicio, proximo_km FROM ordenes_servicios WHERE orden_id = ?',
-      [row.orden_id]
+      `SELECT orden_id, servicio, proximo_km
+       FROM ordenes_servicios
+       WHERE orden_id IN (${placeholders})`,
+      ids
     );
+    loteRows = serviciosRows.length;
 
+    for (const servicioRow of serviciosRows) {
+      const ordenKey = String(servicioRow.orden_id);
+      if (!serviciosByOrden.has(ordenKey)) {
+        serviciosByOrden.set(ordenKey, []);
+      }
+      serviciosByOrden.get(ordenKey).push({
+        servicio: servicioRow.servicio,
+        proximo_km: servicioRow.proximo_km ?? null
+      });
+    }
+  }
+
+  console.log(`[PERF] proximosServicios.ordenes-servicios-lote ${Math.round(performance.now() - tLote)}ms queries=${loteQueries} veiculos=${seenVehiculos.size} rows=${loteRows}`);
+
+  let items = [];
+  for (const row of selected) {
+    const serviciosRows = serviciosByOrden.get(String(row.orden_id)) || [];
     items.push(...buildItemsFromOrden(row, serviciosRows));
   }
 
@@ -197,10 +229,12 @@ async function listProximosServicios(filters = {}) {
     items = items.filter((item) => item.estado === estado);
   }
 
-  return {
+  const result = {
     items: sortItems(items),
     total: items.length
   };
+  console.log(`[PERF] proximosServicios.total ${Math.round(performance.now() - t0)}ms items=${result.total}`);
+  return result;
 }
 
 module.exports = {

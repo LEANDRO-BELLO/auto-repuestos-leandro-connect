@@ -273,9 +273,14 @@ function registerIpcHandlers() {
 
 
   ipcMain.handle('dashboard:get', async () => {
+    const t0 = performance.now();
+    console.log('[PERF] ipc.dashboard:get start');
     try {
-      return await dashboardService.getDashboard();
+      const result = await dashboardService.getDashboard();
+      console.log(`[PERF] ipc.dashboard:get ${Math.round(performance.now() - t0)}ms`);
+      return result;
     } catch (error) {
+      console.log(`[PERF] ipc.dashboard:get FAIL ${Math.round(performance.now() - t0)}ms`);
       logger.error('Error en dashboard:get', error);
       return { agendamientos: [], servicios: [] };
     }
