@@ -6,22 +6,11 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function timed(label, fn) {
-  const t0 = performance.now();
-  try {
-    return await fn();
-  } finally {
-    console.log(`[PERF] ${label} ${Math.round(performance.now() - t0)}ms`);
-  }
-}
-
 async function getDashboard() {
-  const t0 = performance.now();
   const [agendamientos, ordenesAbiertas] = await Promise.all([
-    timed('dashboard.agendamientos', () => agendamientosService.listProximosAgendamientos(12)),
-    timed('dashboard.ordenes-abiertas', () => ordenesService.listOrdenesAbiertasDashboard())
+    agendamientosService.listProximosAgendamientos(12),
+    ordenesService.listOrdenesAbiertasDashboard()
   ]);
-  console.log(`[PERF] dashboard.getDashboard.total ${Math.round(performance.now() - t0)}ms agendamientos=${agendamientos.length} ordenesAbiertas=${ordenesAbiertas.length} servicios=0`);
   return { agendamientos, servicios: [], ordenesAbiertas };
 }
 

@@ -199,10 +199,8 @@ async function navigateTo(pageId, navigationDetail = {}) {
 
     switch (pageId) {
       case 'inicio':
-        console.time('[PERF] inicio.navigateTo');
         contentEl.innerHTML = '';
         await mountDashboardPage(contentEl);
-        console.timeEnd('[PERF] inicio.navigateTo');
         break;
       case 'clientes':
         contentEl.innerHTML = '';

@@ -159,7 +159,6 @@ function sortItems(items) {
 async function listProximosServicios(filters = {}) {
   const search = (filters.search || '').trim();
   const estado = (filters.estado || '').trim();
-  const t0 = performance.now();
 
   const rows = await all(
     `SELECT o.id AS orden_id, o.numero_os, o.kilometraje, o.proximo_km, o.fecha_vencimiento,
@@ -171,7 +170,6 @@ async function listProximosServicios(filters = {}) {
      WHERE o.estado = 'Finalizada'
      ORDER BY o.fecha DESC, o.id DESC`
   );
-  console.log(`[PERF] proximosServicios.ordenes-finalizadas ${Math.round(performance.now() - t0)}ms rows=${rows.length} (sem LIMIT)`);
 
   const seenVehiculos = new Set();
   const selected = [];
@@ -185,21 +183,16 @@ async function listProximosServicios(filters = {}) {
   }
 
   const serviciosByOrden = new Map();
-  const tLote = performance.now();
-  let loteQueries = 0;
-  let loteRows = 0;
 
   if (selected.length > 0) {
     const ids = selected.map((row) => row.orden_id);
     const placeholders = ids.map(() => '?').join(', ');
-    loteQueries = 1;
     const serviciosRows = await all(
       `SELECT orden_id, servicio, proximo_km
        FROM ordenes_servicios
        WHERE orden_id IN (${placeholders})`,
       ids
     );
-    loteRows = serviciosRows.length;
 
     for (const servicioRow of serviciosRows) {
       const ordenKey = String(servicioRow.orden_id);
@@ -212,8 +205,6 @@ async function listProximosServicios(filters = {}) {
       });
     }
   }
-
-  console.log(`[PERF] proximosServicios.ordenes-servicios-lote ${Math.round(performance.now() - tLote)}ms queries=${loteQueries} veiculos=${seenVehiculos.size} rows=${loteRows}`);
 
   let items = [];
   for (const row of selected) {
@@ -229,12 +220,10 @@ async function listProximosServicios(filters = {}) {
     items = items.filter((item) => item.estado === estado);
   }
 
-  const result = {
+  return {
     items: sortItems(items),
     total: items.length
   };
-  console.log(`[PERF] proximosServicios.total ${Math.round(performance.now() - t0)}ms items=${result.total}`);
-  return result;
 }
 
 module.exports = {

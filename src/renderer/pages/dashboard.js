@@ -56,13 +56,9 @@ function template() {
 }
 
 async function load() {
-  console.time('[PERF] ipcRenderer.dashboard:get');
   const data = await window.api.getDashboard();
-  console.timeEnd('[PERF] ipcRenderer.dashboard:get');
-  const tRender = performance.now();
   root.querySelector('#dashboard-appointments').innerHTML = appointmentsRows(data.agendamientos || []);
   root.querySelector('#dashboard-orders').innerHTML = ordenesRows(data.ordenesAbiertas || []);
-  console.log(`[PERF] inicio.render ${Math.round(performance.now() - tRender)}ms agendamientos=${(data.agendamientos || []).length} ordenesAbiertas=${(data.ordenesAbiertas || []).length}`);
 }
 
 async function onClick(event) {
@@ -90,12 +86,10 @@ async function onClick(event) {
 }
 
 export async function mountDashboardPage(container) {
-  console.time('[PERF] inicio.total');
   root = container;
   root.innerHTML = template();
   root.addEventListener('click', onClick);
   await load();
-  console.timeEnd('[PERF] inicio.total');
 }
 
 export function unmountDashboardPage() {
