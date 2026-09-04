@@ -1,5 +1,6 @@
 import { escapeHtml } from '../utils/dom.js';
 import { mountEtiquetaPreview } from '../utils/etiqueta-preview.js';
+import { hasPermission, PERMISSIONS } from '../utils/permisos.js';
 
 const TEXTO_ETIQUETA_DEFAULT =
   'ESCANEA ESTE CÓDIGO y accede al historial completo de mantenimiento de tu vehículo.';
@@ -198,6 +199,12 @@ function bindFormEvents(form) {
 }
 
 export async function mountConfiguracionPage(container) {
+  const user = await window.api.getCurrentUser();
+  if (!hasPermission(user, PERMISSIONS.MENU_CONFIG)) {
+    container.innerHTML = '<p>No autorizado.</p>';
+    return;
+  }
+
   pageRoot = container;
 
   const config = await window.api.getConfigEtiqueta();

@@ -1,6 +1,7 @@
 import { escapeHtml } from '../utils/dom.js';
 import { openVehiculoQrViewer } from '../utils/vehiculos-qr-viewer.js';
 import { openVehiculoEtiquetaViewer } from '../utils/vehiculos-etiqueta-viewer.js';
+import { hasPermission, PERMISSIONS } from '../utils/permisos.js';
 
 let pageRoot = null;
 let searchTimeout = null;
@@ -8,6 +9,7 @@ let clienteSearchTimeout = null;
 let editingId = null;
 let selectedCliente = null;
 let clienteSearchResults = [];
+let currentUser = null;
 
 function formatKilometraje(value) {
   if (value === null || value === undefined || value === '') {
@@ -45,10 +47,12 @@ function renderTableRows(vehiculos) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16v4zM14 6l4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Editar
           </button>
+          ${hasPermission(currentUser, PERMISSIONS.ELIMINAR_VEHICULO) ? `
           <button type="button" class="vehiculos-action-btn vehiculos-action-btn--delete" data-action="delete" data-id="${v.id}" title="Eliminar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M10 11v6M14 11v6M6 7l1 14h10l1-14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Eliminar
           </button>
+          ` : ''}
         </div>
       </td>
     </tr>
@@ -556,6 +560,11 @@ async function handleEdit(id) {
 }
 
 async function handleDelete(id) {
+  if (!hasPermission(currentUser, PERMISSIONS.ELIMINAR_VEHICULO)) {
+    window.alert('No autorizado.');
+    return;
+  }
+
   const vehiculo = await window.api.getVehiculo(id);
   if (!vehiculo) {
     return;
@@ -601,6 +610,7 @@ function handleSearchInput(event) {
 
 export async function mountVehiculosPage(container) {
   pageRoot = container;
+  currentUser = await window.api.getCurrentUser();
   container.innerHTML = renderPageHtml();
 
   container.querySelector('#vehiculos-btn-new').addEventListener('click', () => openModal());
@@ -618,5 +628,6 @@ export function unmountVehiculosPage() {
   editingId = null;
   selectedCliente = null;
   clienteSearchResults = [];
+  currentUser = null;
   pageRoot = null;
 }

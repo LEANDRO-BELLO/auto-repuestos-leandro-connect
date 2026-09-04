@@ -1,7 +1,6 @@
 const { get, all, run } = require('../database/connection');
 const { hashPassword, looksLikeHash } = require('../utils/password');
-
-const ROLES = ['Administrador', 'Usuario'];
+const { ROLES, PERFILES, normalizePerfil } = require('../utils/permisos');
 const MIN_PASSWORD_LENGTH = 4;
 
 function isActiveValue(value) {
@@ -17,7 +16,7 @@ function mapUsuario(row) {
     id: row.id,
     nombre: row.nombre,
     usuario: row.usuario,
-    perfil: row.perfil,
+    perfil: normalizePerfil(row.perfil),
     whatsapp: row.whatsapp || '',
     activo: isActiveValue(row.activo) ? 1 : 0,
     creadoEn: row.creado_en || null
@@ -35,7 +34,16 @@ function isValidWhatsApp(value) {
 
 function normalizeRol(value) {
   const rol = String(value || '').trim();
-  return ROLES.includes(rol) ? rol : null;
+
+  if (ROLES.includes(rol)) {
+    return rol;
+  }
+
+  if (rol === 'Usuario') {
+    return PERFILES.OPERADOR;
+  }
+
+  return null;
 }
 
 async function countActiveAdmins(excludeId = null) {

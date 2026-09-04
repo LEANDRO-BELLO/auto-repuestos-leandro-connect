@@ -1,8 +1,10 @@
 import { escapeHtml } from '../utils/dom.js';
+import { hasPermission, PERMISSIONS } from '../utils/permisos.js';
 
 let pageRoot = null;
 let searchTimeout = null;
 let editingId = null;
+let currentUser = null;
 
 function formatUltimaVisita(value) {
   if (!value) return '—';
@@ -41,10 +43,12 @@ function renderTableRows(clientes) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16v4zM14 6l4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Editar
           </button>
+          ${hasPermission(currentUser, PERMISSIONS.ELIMINAR_CLIENTE) ? `
           <button type="button" class="clientes-action-btn clientes-action-btn--delete" data-action="delete" data-id="${cliente.id}" title="Eliminar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M10 11v6M14 11v6M6 7l1 14h10l1-14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Eliminar
           </button>
+          ` : ''}
         </div>
       </td>
     </tr>
@@ -253,6 +257,11 @@ async function handleEdit(id) {
 }
 
 async function handleDelete(id) {
+  if (!hasPermission(currentUser, PERMISSIONS.ELIMINAR_CLIENTE)) {
+    window.alert('No autorizado.');
+    return;
+  }
+
   try {
     const cliente = await window.api.getCliente(id);
     if (!cliente) {
@@ -299,6 +308,7 @@ function handleSearchInput(event) {
 
 export async function mountClientesPage(container) {
   pageRoot = container;
+  currentUser = await window.api.getCurrentUser();
   container.innerHTML = renderPageHtml();
   container.querySelector('#clientes-btn-new').addEventListener('click', () => openModal());
   container.querySelector('#clientes-search').addEventListener('input', handleSearchInput);
@@ -310,5 +320,6 @@ export function unmountClientesPage() {
   clearTimeout(searchTimeout);
   searchTimeout = null;
   editingId = null;
+  currentUser = null;
   pageRoot = null;
 }

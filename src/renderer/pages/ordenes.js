@@ -2,6 +2,7 @@ import { escapeHtml } from '../utils/dom.js';
 import { getProximaRevisionItems } from '../utils/proxima-revision.js';
 import { exportOrdenDocumentPdf } from '../utils/orden-document-export.js';
 import { buildOrdenWhatsAppMessage, buildWhatsAppUrl } from '../utils/whatsapp-orden.js';
+import { hasPermission, PERMISSIONS } from '../utils/permisos.js';
 
 let pageRoot = null;
 let searchTimeout = null;
@@ -15,6 +16,7 @@ let selectedServiciosKm = {};
 let currentOrden = null;
 let currentAgendamientoId = null;
 let currentAgendamiento = null;
+let currentUser = null;
 
 const SERVICIOS_CON_KM = new Set([
   'aceite_caja_cambio',
@@ -158,10 +160,12 @@ function renderTableRows(ordenes) {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16v4zM14 6l4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Editar
             </button>
+            ${hasPermission(currentUser, PERMISSIONS.ELIMINAR_ORDEN) ? `
             <button type="button" class="ordenes-action-btn ordenes-action-btn--delete" data-action="delete" data-id="${o.id}" title="Eliminar">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M10 11v6M14 11v6M6 7l1 14h10l1-14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Eliminar
             </button>
+            ` : ''}
           </div>
         </td>
       </tr>
@@ -1116,6 +1120,11 @@ async function handleEdit(id) {
 }
 
 async function handleDelete(id) {
+  if (!hasPermission(currentUser, PERMISSIONS.ELIMINAR_ORDEN)) {
+    window.alert('No autorizado.');
+    return;
+  }
+
   const orden = await window.api.getOrden(id);
   if (!orden) {
     return;
@@ -1164,6 +1173,7 @@ function handleSearchInput(event) {
 
 export async function mountOrdenesPage(container, options = {}) {
   pageRoot = container;
+  currentUser = await window.api.getCurrentUser();
   container.innerHTML = renderPageHtml();
 
   container.querySelector('#ordenes-btn-new').addEventListener('click', () => openModal());
@@ -1214,5 +1224,6 @@ export function unmountOrdenesPage() {
   currentOrden = null;
   currentAgendamientoId = null;
   currentAgendamiento = null;
+  currentUser = null;
   pageRoot = null;
 }

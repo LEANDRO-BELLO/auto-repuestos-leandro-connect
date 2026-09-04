@@ -12,18 +12,19 @@ import {
   mountAgendamientosPage,
   unmountAgendamientosPage
 } from './agendamientos.js';
+import { hasPermission, PERMISSIONS } from '../utils/permisos.js';
 
 const MENU_ITEMS = [
-  { id: 'inicio', label: 'Inicio', icon: 'home' },
-  { id: 'clientes', label: 'Clientes', icon: 'users' },
-  { id: 'vehiculos', label: 'Vehículos', icon: 'car' },
-  { id: 'ordenes', label: 'Órdenes de Trabajo', icon: 'clipboard' },
-  { id: 'agendamientos', label: 'Agendamientos', icon: 'calendar' },
-  { id: 'servicios', label: 'Servicios Realizados', icon: 'check' },
-  { id: 'proximos', label: 'Próximos Servicios', icon: 'calendar' },
-  { id: 'empresa', label: 'Empresa', icon: 'building' },
-  { id: 'config', label: 'Configuración', icon: 'settings' },
-  { id: 'usuarios', label: 'Usuarios', icon: 'userCog', adminOnly: true }
+  { id: 'inicio', label: 'Inicio', icon: 'home', permission: PERMISSIONS.MENU_INICIO },
+  { id: 'clientes', label: 'Clientes', icon: 'users', permission: PERMISSIONS.MENU_CLIENTES },
+  { id: 'vehiculos', label: 'Vehículos', icon: 'car', permission: PERMISSIONS.MENU_VEHICULOS },
+  { id: 'ordenes', label: 'Órdenes de Trabajo', icon: 'clipboard', permission: PERMISSIONS.MENU_ORDENES },
+  { id: 'agendamientos', label: 'Agendamientos', icon: 'calendar', permission: PERMISSIONS.MENU_AGENDAMIENTOS },
+  { id: 'servicios', label: 'Servicios Realizados', icon: 'check', permission: PERMISSIONS.MENU_SERVICIOS },
+  { id: 'proximos', label: 'Próximos Servicios', icon: 'calendar', permission: PERMISSIONS.MENU_PROXIMOS },
+  { id: 'empresa', label: 'Empresa', icon: 'building', permission: PERMISSIONS.MENU_EMPRESA },
+  { id: 'config', label: 'Configuración', icon: 'settings', permission: PERMISSIONS.MENU_CONFIG },
+  { id: 'usuarios', label: 'Usuarios', icon: 'userCog', permission: PERMISSIONS.MENU_USUARIOS }
 ];
 
 const PAGE_HEADERS = {
@@ -73,12 +74,22 @@ function formatTimeParaguay(date = new Date()) {
   }).format(date);
 }
 
-function isAdminUser(user) {
-  return user?.perfil === 'Administrador';
+function canOpenPage(user, pageId) {
+  const item = MENU_ITEMS.find((entry) => entry.id === pageId);
+
+  if (item) {
+    return hasPermission(user, item.permission);
+  }
+
+  if (pageId === 'historial-vehiculo-qr') {
+    return hasPermission(user, PERMISSIONS.MENU_INICIO);
+  }
+
+  return false;
 }
 
 function getVisibleMenuItems(user) {
-  return MENU_ITEMS.filter((item) => !item.adminOnly || isAdminUser(user));
+  return MENU_ITEMS.filter((item) => hasPermission(user, item.permission));
 }
 
 function renderNavItems(activePage, user) {
@@ -151,7 +162,7 @@ async function navigateTo(pageId, navigationDetail = {}) {
     return;
   }
 
-  if (pageId === 'usuarios' && !isAdminUser(shellState.user)) {
+  if (!canOpenPage(shellState.user, pageId)) {
     return;
   }
 
@@ -278,7 +289,7 @@ function bindNavigation() {
 
 export function renderAppShell({ user, empresa, onLogout, page = 'inicio' }) {
   const root = document.getElementById('app-root');
-  const initialPage = page === 'usuarios' && !isAdminUser(user) ? 'inicio' : page;
+  const initialPage = canOpenPage(user, page) ? page : 'inicio';
 
   shellState = {
     currentPage: initialPage,

@@ -1,4 +1,5 @@
 import { escapeHtml } from '../utils/dom.js';
+import { hasPermission, PERMISSIONS } from '../utils/permisos.js';
 
 let pageRoot = null;
 let searchTimeout = null;
@@ -86,7 +87,8 @@ function renderFormModal(isEdit = false) {
             <div class="usuarios-form__field">
               <label for="usuario-perfil">Rol <span class="usuarios-required">*</span></label>
               <select id="usuario-perfil" name="perfil" required>
-                <option value="Usuario">Usuario</option>
+                <option value="Operador">Operador</option>
+                <option value="Supervisor">Supervisor</option>
                 <option value="Administrador">Administrador</option>
               </select>
             </div>
@@ -179,7 +181,9 @@ function openModal(usuario = null) {
     form.nombre.value = usuario.nombre || '';
     form.usuario.value = usuario.usuario || '';
     form.whatsapp.value = usuario.whatsapp || '';
-    form.perfil.value = usuario.perfil || 'Usuario';
+    form.perfil.value = ['Administrador', 'Supervisor', 'Operador'].includes(usuario.perfil)
+      ? usuario.perfil
+      : 'Operador';
     form.activo.value = Number(usuario.activo) === 1 ? '1' : '0';
   }
 
@@ -296,8 +300,13 @@ function handleSearchInput(event) {
 }
 
 export async function mountUsuariosPage(container) {
-  pageRoot = container;
   const session = await window.api.getCurrentUser();
+  if (!hasPermission(session, PERMISSIONS.MENU_USUARIOS)) {
+    container.innerHTML = '<p>No autorizado.</p>';
+    return;
+  }
+
+  pageRoot = container;
   currentUserId = session?.id ?? null;
   container.innerHTML = renderPageHtml();
   container.querySelector('#usuarios-btn-new').addEventListener('click', () => openModal());

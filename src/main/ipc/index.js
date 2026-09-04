@@ -1,6 +1,7 @@
 const { ipcMain } = require('electron');
 const { authService, empresaService, clientesService, vehiculosService, ordenesService, serviciosRealizadosService, proximosServiciosService, configEtiquetaService, agendamientosService, dashboardService, usuariosService } = require('../../services');
 const logger = require('../../utils/logger');
+const { hasPermission, listPermissions, normalizePerfil, PERMISSIONS } = require('../../utils/permisos');
 
 let currentSession = null;
 
@@ -13,18 +14,19 @@ function publicUser(user) {
     id: user.id,
     nombre: user.nombre,
     usuario: user.usuario,
-    perfil: user.perfil,
+    perfil: normalizePerfil(user.perfil),
     whatsapp: user.whatsapp || '',
-    activo: user.activo
+    activo: user.activo,
+    permisos: listPermissions(user.perfil)
   };
 }
 
-function requireAdmin() {
+function requirePermission(permission) {
   if (!currentSession) {
     return { ok: false, error: 'Debe iniciar sesión.' };
   }
 
-  if (currentSession.perfil !== 'Administrador') {
+  if (!hasPermission(currentSession, permission)) {
     return { ok: false, error: 'No autorizado.' };
   }
 
@@ -129,6 +131,11 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('clientes:delete', async (_event, id) => {
+    const denied = requirePermission(PERMISSIONS.ELIMINAR_CLIENTE);
+    if (denied) {
+      return denied;
+    }
+
     try {
       return await clientesService.deleteCliente(id);
     } catch (error) {
@@ -181,6 +188,11 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('vehiculos:delete', async (_event, id) => {
+    const denied = requirePermission(PERMISSIONS.ELIMINAR_VEHICULO);
+    if (denied) {
+      return denied;
+    }
+
     try {
       return await vehiculosService.deleteVehiculo(id);
     } catch (error) {
@@ -226,6 +238,11 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('ordenes:delete', async (_event, id) => {
+    const denied = requirePermission(PERMISSIONS.ELIMINAR_ORDEN);
+    if (denied) {
+      return denied;
+    }
+
     try {
       return await ordenesService.deleteOrden(id);
     } catch (error) {
@@ -316,6 +333,11 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('configEtiqueta:get', async () => {
+    const denied = requirePermission(PERMISSIONS.MENU_CONFIG);
+    if (denied) {
+      return null;
+    }
+
     try {
       return await configEtiquetaService.getConfigEtiqueta();
     } catch (error) {
@@ -325,6 +347,11 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('configEtiqueta:update', async (_event, data) => {
+    const denied = requirePermission(PERMISSIONS.MENU_CONFIG);
+    if (denied) {
+      return denied;
+    }
+
     try {
       return await configEtiquetaService.updateConfigEtiqueta(data);
     } catch (error) {
@@ -334,7 +361,7 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('usuarios:list', async (_event, search) => {
-    const denied = requireAdmin();
+    const denied = requirePermission(PERMISSIONS.MENU_USUARIOS);
     if (denied) {
       return [];
     }
@@ -348,7 +375,7 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('usuarios:get', async (_event, id) => {
-    const denied = requireAdmin();
+    const denied = requirePermission(PERMISSIONS.MENU_USUARIOS);
     if (denied) {
       return null;
     }
@@ -362,7 +389,7 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('usuarios:create', async (_event, data) => {
-    const denied = requireAdmin();
+    const denied = requirePermission(PERMISSIONS.MENU_USUARIOS);
     if (denied) {
       return denied;
     }
@@ -376,7 +403,7 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('usuarios:update', async (_event, id, data) => {
-    const denied = requireAdmin();
+    const denied = requirePermission(PERMISSIONS.MENU_USUARIOS);
     if (denied) {
       return denied;
     }
@@ -398,7 +425,7 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('usuarios:setActivo', async (_event, id, activo) => {
-    const denied = requireAdmin();
+    const denied = requirePermission(PERMISSIONS.MENU_USUARIOS);
     if (denied) {
       return denied;
     }
