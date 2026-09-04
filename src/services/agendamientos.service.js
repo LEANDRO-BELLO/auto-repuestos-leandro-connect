@@ -53,7 +53,7 @@ function validate(data) {
   }
 
   if (!data.vehiculoId && !data.vehiculoDescripcion) {
-    return 'Seleccione un vehÃ­culo o escriba la descripciÃ³n del vehÃ­culo.';
+    return 'Seleccione un vehículo o escriba la descripción del vehículo.';
   }
 
   return null;
@@ -196,7 +196,7 @@ async function updateAgendamiento(id, payload) {
 
 async function setEstadoAgendamiento(id, estado) {
   const permitidos = new Set(['Pendiente', 'En proceso', 'Finalizado', 'Cancelado']);
-  if (!permitidos.has(estado)) return { ok: false, error: 'Estado invÃ¡lido.' };
+  if (!permitidos.has(estado)) return { ok: false, error: 'Estado inválido.' };
   await run('UPDATE agendamientos SET estado = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [estado, id]);
   return { ok: true };
 }
