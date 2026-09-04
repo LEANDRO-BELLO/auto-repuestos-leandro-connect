@@ -1,15 +1,25 @@
 const { get, all } = require('../database/connection');
 const { SERVICIOS_CATALOGO } = require('./ordenes.service');
+const { resolveServicioLabel } = require('../utils/servicios-labels');
 
-const LABEL_BY_ID = Object.fromEntries(SERVICIOS_CATALOGO.map((s) => [s.id, s.label]));
+function parseServicioIds(value) {
+  if (Array.isArray(value)) {
+    return value.map((id) => String(id).trim()).filter(Boolean);
+  }
 
+  if (!value) {
+    return [];
+  }
+
+  return String(value)
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
 
 function mapRow(row) {
-  const servicioIds = row.servicios_ids
-    ? row.servicios_ids.split(',').filter(Boolean)
-    : [];
-
-  const serviciosLabels = servicioIds.map((id) => LABEL_BY_ID[id] || id);
+  const servicioIds = parseServicioIds(row.servicios_ids);
+  const serviciosLabels = servicioIds.map((id) => resolveServicioLabel(id));
 
   return {
     id: row.id,

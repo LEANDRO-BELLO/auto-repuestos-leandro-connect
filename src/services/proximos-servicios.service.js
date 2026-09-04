@@ -1,5 +1,6 @@
 const { all } = require('../database/connection');
 const { SERVICIOS_CATALOGO } = require('./ordenes.service');
+const { resolveServicioLabel } = require('../utils/servicios-labels');
 
 const ACEITE_MOTOR_ID = 'aceite_motor';
 
@@ -12,8 +13,6 @@ const SERVICIOS_KM_INDIVIDUAL = new Set([
   'fluido_radiador',
   'fluido_freno'
 ]);
-
-const LABEL_BY_ID = Object.fromEntries(SERVICIOS_CATALOGO.map((s) => [s.id, s.label]));
 
 const KM_PROXIMO_UMBRAL = 5000;
 
@@ -76,7 +75,7 @@ function buildItemsFromOrden(row, serviciosRows) {
   if (servicioIds.has(ACEITE_MOTOR_ID) && mainProximoKm !== null) {
     revisionItems.push({
       servicioId: ACEITE_MOTOR_ID,
-      servicioLabel: LABEL_BY_ID[ACEITE_MOTOR_ID],
+      servicioLabel: resolveServicioLabel(ACEITE_MOTOR_ID),
       proximoKm: mainProximoKm,
       fechaVencimiento: row.fecha_vencimiento || null
     });
@@ -99,7 +98,7 @@ function buildItemsFromOrden(row, serviciosRows) {
 
     revisionItems.push({
       servicioId,
-      servicioLabel: LABEL_BY_ID[servicioId] || servicioId,
+      servicioLabel: resolveServicioLabel(servicioId),
       proximoKm: individualKm,
       fechaVencimiento: null
     });

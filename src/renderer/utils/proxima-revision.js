@@ -1,3 +1,5 @@
+import { canonicalServicioId, resolveServicioLabel, SERVICIO_ALIASES } from './servicios-labels.js';
+
 const ACEITE_MOTOR_ID = 'aceite_motor';
 
 function parseKm(value) {
@@ -9,20 +11,35 @@ function parseKm(value) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function getLabel(catalog, id) {
-  return catalog.find((item) => item.id === id)?.label || id;
+function kmForServicio(serviciosKm, catalogId) {
+  const direct = parseKm(serviciosKm[catalogId]);
+
+  if (direct !== null) {
+    return direct;
+  }
+
+  for (const [alias, canonical] of Object.entries(SERVICIO_ALIASES)) {
+    if (canonical === catalogId) {
+      const aliased = parseKm(serviciosKm[alias]);
+      if (aliased !== null) {
+        return aliased;
+      }
+    }
+  }
+
+  return null;
 }
 
 export function getProximaRevisionItems(orden, catalog) {
   const mainProximoKm = parseKm(orden.proximoKm);
   const serviciosKm = orden.serviciosKm || {};
-  const servicioIds = new Set(orden.servicios || []);
+  const servicioIds = new Set((orden.servicios || []).map(canonicalServicioId).filter(Boolean));
   const items = [];
 
   if (servicioIds.has(ACEITE_MOTOR_ID) && mainProximoKm !== null) {
     items.push({
       id: ACEITE_MOTOR_ID,
-      label: getLabel(catalog, ACEITE_MOTOR_ID),
+      label: resolveServicioLabel(ACEITE_MOTOR_ID, catalog),
       proximoKm: mainProximoKm
     });
   }
@@ -36,7 +53,7 @@ export function getProximaRevisionItems(orden, catalog) {
       continue;
     }
 
-    const individualKm = parseKm(serviciosKm[servicio.id]);
+    const individualKm = kmForServicio(serviciosKm, servicio.id);
 
     if (individualKm === null) {
       continue;
@@ -48,7 +65,7 @@ export function getProximaRevisionItems(orden, catalog) {
 
     items.push({
       id: servicio.id,
-      label: servicio.label,
+      label: resolveServicioLabel(servicio.id, catalog),
       proximoKm: individualKm
     });
   }

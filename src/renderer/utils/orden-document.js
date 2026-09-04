@@ -1,28 +1,9 @@
 import { getProximaRevisionItems } from './proxima-revision.js';
+import { SERVICIOS_CATALOGO, resolveServicioLabel } from './servicios-labels.js';
+
+export { SERVICIOS_CATALOGO };
 
 const LOGO_OFICIAL_URL = new URL('../assets/logo-oficial.png', import.meta.url).href;
-
-export const SERVICIOS_CATALOGO = [
-  { id: 'aceite_motor', label: 'Cambio de aceite motor' },
-  { id: 'filtro_aceite', label: 'Filtro de aceite' },
-  { id: 'filtro_aire', label: 'Filtro de aire' },
-  { id: 'filtro_combustible', label: 'Filtro de combustible' },
-  { id: 'filtro_secundario', label: 'Filtro secundario' },
-  { id: 'filtro_aire_ac', label: 'Filtro de aire acondicionado' },
-  { id: 'aceite_caja_cambio', label: 'Cambio de aceite caja de cambio' },
-  { id: 'aceite_caja_transferencia', label: 'Cambio de aceite caja de transferencia' },
-  { id: 'aceite_dif_del', label: 'Cambio de aceite diferencial delantero' },
-  { id: 'aceite_dif_tras', label: 'Cambio de aceite diferencial trasero' },
-  { id: 'aceite_direccion', label: 'Cambio de aceite de dirección' },
-  { id: 'fluido_radiador', label: 'Cambio de fluido de radiador' },
-  { id: 'fluido_freno', label: 'Cambio de fluido de freno' },
-  { id: 'pastilla_freno_delantera', label: 'Cambio de pastilla de freno delantera' },
-  { id: 'pastilla_freno_trasera', label: 'Cambio de pastilla de freno trasera' },
-  { id: 'engrase_crucetas', label: 'Engrase de crucetas' },
-  { id: 'filtro_caja_automatica', label: 'Filtro caja automática' }
-];
-
-const LABEL_BY_ID = Object.fromEntries(SERVICIOS_CATALOGO.map((s) => [s.id, s.label]));
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -156,8 +137,8 @@ export function buildOrdenDocumentHtml({
   catalog = SERVICIOS_CATALOGO
 }) {
   const documentTitle = 'Servicios Realizados';
-  const serviciosRealizados = (orden.servicios || []).map(
-    (id) => LABEL_BY_ID[id] || catalog.find((s) => s.id === id)?.label || id
+  const serviciosRealizados = (orden.servicios || []).map((id) =>
+    resolveServicioLabel(id, catalog)
   );
   const revisionItems = getProximaRevisionItems(orden, catalog);
 
@@ -193,7 +174,7 @@ export function buildOrdenDocumentHtml({
         <h1>${escapeHtml(empresa?.nombre || 'Auto Repuestos Leandro S.A.')}</h1>
         <p>Ventas de repuestos y accesorios</p>
         <p>Anexo: cambio de aceite y filtros en general</p>
-        <p class="doc-contact">Tel: ${escapeHtml(empresa?.telefono || '+595 986 773 222')} &nbsp;&nbsp; Katueté - Canindeyú - Paraguay</p>
+        <p class="doc-contact">Tel: ${escapeHtml(empresa?.telefono || '+595 986 773 222')} &nbsp;&nbsp; Katuet&eacute; - Canindey&uacute; - Paraguay</p>
       </div>
     </header>
 
@@ -249,7 +230,7 @@ export function buildOrdenDocumentHtml({
     <footer class="doc-footer">
       <strong>WhatsApp:</strong> ${escapeHtml(empresa?.whatsapp || '+595 986 773 222')} &nbsp; | &nbsp;
       <strong>E-mail:</strong> ${escapeHtml(empresa?.email || 'autorepuestosleandrosa@gmail.com')} &nbsp; | &nbsp;
-      <strong>Ubicación:</strong> Katueté - Canindeyú - Paraguay
+      <strong>Ubicación:</strong> Katuet&eacute; - Canindey&uacute; - Paraguay
     </footer>
   </div>
 </body>

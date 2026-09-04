@@ -2,6 +2,7 @@ import { escapeHtml } from '../utils/dom.js';
 import { getProximaRevisionItems } from '../utils/proxima-revision.js';
 import { exportOrdenDocumentPdf } from '../utils/orden-document-export.js';
 import { buildOrdenWhatsAppMessage, buildWhatsAppUrl } from '../utils/whatsapp-orden.js';
+import { resolveServicioLabel } from '../utils/servicios-labels.js';
 import { hasPermission, PERMISSIONS } from '../utils/permisos.js';
 
 let pageRoot = null;
@@ -827,8 +828,8 @@ function bindFinalizeSuccessModalEvents(ordenId) {
       ]);
 
       const phone = cliente?.whatsapp || cliente?.telefono;
-      const serviciosLabels = (orden.servicios || []).map(
-        (id) => SERVICIOS_CATALOGO.find((s) => s.id === id)?.label || id
+      const serviciosLabels = (orden.servicios || []).map((id) =>
+        resolveServicioLabel(id, SERVICIOS_CATALOGO)
       );
       const message = buildOrdenWhatsAppMessage({ empresa, cliente, orden, serviciosLabels });
       const url = buildWhatsAppUrl(phone, message);
