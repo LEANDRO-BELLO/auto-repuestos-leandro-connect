@@ -1,7 +1,7 @@
 {
     "name":  "auto-repuestos-leandro-connect",
     "productName":  "Auto Repuestos Leandro Connect",
-    "version":  "1.0.1",
+    "version":  "1.0.2",
     "description":  "Auto Repuestos Leandro Connect â€” Sistema comercial modular para lubricentro y mantenimiento preventivo.",
     "main":  "src/main/main.js",
     "author":  "Auto Repuestos Leandro S.A.",
