@@ -1,7 +1,17 @@
 import { escapeHtml } from '../utils/dom.js';
+import { hasPermission, PERMISSIONS } from '../utils/permisos.js';
+import {
+  buildAvisoProximoWhatsAppMessage,
+  buildWhatsAppUrl,
+  normalizeWhatsAppPhone
+} from '../utils/whatsapp-orden.js';
 
 let pageRoot = null;
 let searchTimeout = null;
+let currentItems = [];
+let canAvisarCliente = false;
+const pendingRegistro = new Map();
+const avisosEnCurso = new Set();
 
 const ESTADO_CLASS = {
   'En plazo': 'done',
@@ -36,6 +46,75 @@ function formatKilometraje(value) {
 function formatVehiculo(item) {
   const marcaModelo = [item.vehiculoMarca, item.vehiculoModelo].filter(Boolean).join(' ');
   return marcaModelo || '—';
+}
+
+function formatFechaHora(value) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('es-PY', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(date);
+}
+
+function avisoKey(item) {
+  return `${item.vehiculoId}:${item.servicioId}`;
+}
+
+function daysUntilVencimiento(fechaVencimiento) {
+  if (!fechaVencimiento) {
+    return null;
+  }
+
+  const fecha = new Date(`${fechaVencimiento}T12:00:00`);
+  if (Number.isNaN(fecha.getTime())) {
+    return null;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.ceil((fecha - today) / (1000 * 60 * 60 * 24));
+}
+
+function debeMostrarBotonAvisar(item) {
+  if (!canAvisarCliente || !item) {
+    return false;
+  }
+
+  if (item.estado === 'Vencido') {
+    return true;
+  }
+
+  const days = daysUntilVencimiento(item.fechaVencimiento);
+  return days !== null && days >= 0 && days <= 15;
+}
+
+function renderUltimoAviso(item) {
+  if (!item.ultimoAviso?.avisadoEn) {
+    return '';
+  }
+
+  const when = formatFechaHora(item.ultimoAviso.avisadoEn);
+  const who = item.ultimoAviso.usuarioNombre || '';
+  const meta = [when, who].filter(Boolean).join(' · ');
+
+  return `
+    <span class="proximos-aviso-status">
+      <span class="proximos-aviso-badge">Avisado</span>
+      ${meta ? `<span class="proximos-aviso-meta">${escapeHtml(meta)}</span>` : ''}
+    </span>
+  `;
 }
 
 function getFilters() {
@@ -77,6 +156,13 @@ function renderTableRows(items) {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
               Ver detalle
             </button>
+            ${debeMostrarBotonAvisar(item) ? `
+            <button type="button" class="proximos-action-btn proximos-action-btn--whatsapp" data-action="avisar" data-vehiculo-id="${item.vehiculoId}" data-servicio-id="${escapeHtml(item.servicioId)}" title="Avisar cliente">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.5c-1.2 0-2.4-.2-3.6-.6-.3-.1-.7 0-1 .2l-2.2 1.7c-3.2-1.7-5.8-4.3-7.5-7.5l1.7-2.2c.3-.3.4-.7.2-1C8.7 6.4 8.5 5.2 8.5 4c0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1 0 9.4 7.6 17 17 17 .6 0 1-.4 1-1v-3.5c0-.6-.4-1-1-1z" fill="currentColor"/></svg>
+              Avisar cliente
+            </button>
+            ` : ''}
+            ${renderUltimoAviso(item)}
           </div>
         </td>
       </tr>
@@ -220,12 +306,145 @@ async function loadProximosServicios() {
   }
 
   const result = await window.api.listProximosServicios(getFilters());
-  tbody.innerHTML = renderTableRows(result.items || []);
+  currentItems = result.items || [];
+  tbody.innerHTML = renderTableRows(currentItems);
+}
+
+function buildAvisoPayload(item, telefonoUsado) {
+  return {
+    ordenId: item.ordenId,
+    numeroOs: item.numeroOs,
+    clienteId: item.clienteId,
+    clienteNombre: item.clienteNombre,
+    vehiculoId: item.vehiculoId,
+    vehiculoPlaca: item.vehiculoPlaca,
+    vehiculoMarca: item.vehiculoMarca,
+    vehiculoModelo: item.vehiculoModelo,
+    servicioId: item.servicioId,
+    servicioLabel: item.servicioLabel,
+    telefonoUsado
+  };
+}
+
+async function registrarAvisoPendiente(item, payload) {
+  const result = await window.api.registrarAvisoProximoServicio(payload);
+
+  if (!result?.ok) {
+    pendingRegistro.set(avisoKey(item), payload);
+    window.alert(
+      result?.error
+        || 'WhatsApp se abrió, pero no se pudo registrar el aviso. Pulse de nuevo "Avisar cliente" para reintentar solo el registro.'
+    );
+    return false;
+  }
+
+  pendingRegistro.delete(avisoKey(item));
+  await loadProximosServicios();
+  return true;
+}
+
+async function handleAvisar(vehiculoId, servicioId, button) {
+  if (!canAvisarCliente) {
+    window.alert('No autorizado.');
+    return;
+  }
+
+  const item = currentItems.find(
+    (row) => Number(row.vehiculoId) === Number(vehiculoId) && row.servicioId === servicioId
+  );
+
+  if (!item) {
+    window.alert('No se pudo cargar el servicio para avisar al cliente.');
+    return;
+  }
+
+  const key = avisoKey(item);
+  const pending = pendingRegistro.get(key);
+
+  if (avisosEnCurso.has(key)) {
+    return;
+  }
+
+  avisosEnCurso.add(key);
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  try {
+    if (pending) {
+      await registrarAvisoPendiente(item, pending);
+      return;
+    }
+
+    if (!debeMostrarBotonAvisar(item)) {
+      window.alert('Este servicio aún no está en la ventana de aviso.');
+      return;
+    }
+
+    const phone = item.clienteWhatsapp;
+    const url = buildWhatsAppUrl(
+      phone,
+      buildAvisoProximoWhatsAppMessage({
+        empresa: await window.api.getEmpresa(),
+        item
+      })
+    );
+
+    if (!url || !normalizeWhatsAppPhone(phone)) {
+      window.alert('El cliente no tiene WhatsApp ni teléfono registrado.');
+      return;
+    }
+
+    const opened = await window.api.openExternal(url);
+
+    if (!opened?.ok) {
+      window.alert(opened?.error || 'No se pudo abrir WhatsApp.');
+      return;
+    }
+
+    await registrarAvisoPendiente(item, buildAvisoPayload(item, normalizeWhatsAppPhone(phone)));
+  } catch (error) {
+    window.alert(error.message || 'No se pudo avisar al cliente.');
+  } finally {
+    avisosEnCurso.delete(key);
+    if (button) {
+      button.disabled = false;
+    }
+  }
 }
 
 function handleFilterChange() {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => loadProximosServicios(), 300);
+}
+
+function handleProximosInput(event) {
+  if (event.target?.id === 'proximos-search') {
+    handleFilterChange();
+  }
+}
+
+function handleProximosChange(event) {
+  if (event.target?.id === 'proximos-estado') {
+    handleFilterChange();
+  }
+}
+
+function bindPageListeners(container) {
+  container.addEventListener('input', handleProximosInput);
+  container.addEventListener('change', handleProximosChange);
+  container.addEventListener('click', handleTableClick);
+}
+
+function unbindPageListeners(container) {
+  if (!container) {
+    return;
+  }
+
+  container.removeEventListener('input', handleProximosInput);
+  container.removeEventListener('change', handleProximosChange);
+  container.removeEventListener('click', handleTableClick);
 }
 
 async function handleView(ordenId, servicioId) {
@@ -252,19 +471,24 @@ function handleTableClick(event) {
     return;
   }
 
-  const { action, ordenId, servicioId } = btn.dataset;
+  const { action, ordenId, servicioId, vehiculoId } = btn.dataset;
   if (action === 'view' && ordenId && servicioId) {
     handleView(Number(ordenId), servicioId);
+    return;
+  }
+
+  if (action === 'avisar' && vehiculoId && servicioId) {
+    handleAvisar(Number(vehiculoId), servicioId, btn);
   }
 }
 
 export async function mountProximosServiciosPage(container) {
+  unbindPageListeners(pageRoot);
   pageRoot = container;
+  const session = await window.api.getCurrentUser();
+  canAvisarCliente = hasPermission(session, PERMISSIONS.AVISAR_CLIENTE);
   container.innerHTML = renderPageHtml();
-
-  container.querySelector('#proximos-search').addEventListener('input', handleFilterChange);
-  container.querySelector('#proximos-estado').addEventListener('change', handleFilterChange);
-  container.addEventListener('click', handleTableClick);
+  bindPageListeners(container);
 
   await loadProximosServicios();
 }
@@ -272,6 +496,11 @@ export async function mountProximosServiciosPage(container) {
 export function unmountProximosServiciosPage() {
   clearTimeout(searchTimeout);
   searchTimeout = null;
+  pendingRegistro.clear();
+  avisosEnCurso.clear();
+  currentItems = [];
+  canAvisarCliente = false;
   closeModal();
+  unbindPageListeners(pageRoot);
   pageRoot = null;
 }
