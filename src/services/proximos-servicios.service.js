@@ -1,8 +1,10 @@
 const { all } = require('../database/connection');
 const { SERVICIOS_CATALOGO } = require('./ordenes.service');
 const { resolveServicioLabel } = require('../utils/servicios-labels');
+const avisosProximosService = require('./avisos-proximos.service');
 
 const ACEITE_MOTOR_ID = 'aceite_motor';
+const CAMBIO_BATERIA_ID = 'cambio_bateria';
 
 const SERVICIOS_KM_INDIVIDUAL = new Set([
   'aceite_caja_cambio',
@@ -15,6 +17,24 @@ const SERVICIOS_KM_INDIVIDUAL = new Set([
 ]);
 
 const KM_PROXIMO_UMBRAL = 5000;
+
+function parseFecha(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const text = String(value).trim().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+}
+
+function fechaBateriaFromServicios(serviciosRows, ordenFechaVencimiento) {
+  const bateria = serviciosRows.find((s) => s.servicio === CAMBIO_BATERIA_ID);
+  return parseFecha(bateria?.fecha_vencimiento) || parseFecha(ordenFechaVencimiento);
+}
 
 function parseKm(value) {
   if (value === null || value === undefined || value === '') {
@@ -104,13 +124,28 @@ function buildItemsFromOrden(row, serviciosRows) {
     });
   }
 
+  if (servicioIds.has(CAMBIO_BATERIA_ID)) {
+    const fechaBateria = fechaBateriaFromServicios(serviciosRows, row.fecha_vencimiento);
+
+    if (fechaBateria) {
+      revisionItems.push({
+        servicioId: CAMBIO_BATERIA_ID,
+        servicioLabel: resolveServicioLabel(CAMBIO_BATERIA_ID),
+        proximoKm: null,
+        fechaVencimiento: fechaBateria
+      });
+    }
+  }
+
   return revisionItems.map((item) => ({
     id: `${row.orden_id}-${item.servicioId}`,
     ordenId: row.orden_id,
     numeroOs: row.numero_os,
+    clienteId: row.cliente_id,
     clienteNombre: row.cliente_nombre || '',
     clienteCodigo: row.cliente_codigo || '',
     clienteWhatsapp: row.whatsapp || row.telefono || '',
+    vehiculoId: row.vehiculo_id,
     vehiculoPlaca: row.placa || '',
     vehiculoMarca: row.marca || '',
     vehiculoModelo: row.modelo || '',
@@ -120,7 +155,8 @@ function buildItemsFromOrden(row, serviciosRows) {
     ultimoKm: row.kilometraje ?? null,
     proximoKm: item.proximoKm,
     fechaVencimiento: item.fechaVencimiento,
-    estado: computeEstado(item.fechaVencimiento, item.proximoKm, row.vehiculo_km_actual)
+    estado: computeEstado(item.fechaVencimiento, item.proximoKm, row.vehiculo_km_actual),
+    ultimoAviso: null
   }));
 }
 
@@ -161,7 +197,7 @@ async function listProximosServicios(filters = {}) {
 
   const rows = await all(
     `SELECT o.id AS orden_id, o.numero_os, o.kilometraje, o.proximo_km, o.fecha_vencimiento,
-            c.nombre AS cliente_nombre, c.codigo AS cliente_codigo, c.whatsapp, c.telefono,
+            c.id AS cliente_id, c.nombre AS cliente_nombre, c.codigo AS cliente_codigo, c.whatsapp, c.telefono,
             v.id AS vehiculo_id, v.placa, v.marca, v.modelo, v.kilometraje AS vehiculo_km_actual
      FROM ordenes_trabajo o
      INNER JOIN clientes c ON c.id = o.cliente_id
@@ -187,7 +223,7 @@ async function listProximosServicios(filters = {}) {
     const ids = selected.map((row) => row.orden_id);
     const placeholders = ids.map(() => '?').join(', ');
     const serviciosRows = await all(
-      `SELECT orden_id, servicio, proximo_km
+      `SELECT orden_id, servicio, proximo_km, fecha_vencimiento
        FROM ordenes_servicios
        WHERE orden_id IN (${placeholders})`,
       ids
@@ -200,7 +236,8 @@ async function listProximosServicios(filters = {}) {
       }
       serviciosByOrden.get(ordenKey).push({
         servicio: servicioRow.servicio,
-        proximo_km: servicioRow.proximo_km ?? null
+        proximo_km: servicioRow.proximo_km ?? null,
+        fecha_vencimiento: servicioRow.fecha_vencimiento ?? null
       });
     }
   }
@@ -215,12 +252,40 @@ async function listProximosServicios(filters = {}) {
     items = items.filter((item) => matchesSearch(item, search));
   }
 
-  if (estado && estado !== 'Todos') {
+  if (estado && estado !== 'Todos' && estado !== 'Avisado') {
     items = items.filter((item) => item.estado === estado);
   }
 
+  items = sortItems(items);
+
+  try {
+    const avisos = await avisosProximosService.listarUltimosAvisos(
+      items.map((item) => ({
+        vehiculoId: item.vehiculoId,
+        servicioId: item.servicioId
+      }))
+    );
+
+    const latestByKey = new Map(
+      (avisos.items || []).map((aviso) => [`${aviso.vehiculoId}:${aviso.servicioId}`, aviso])
+    );
+
+    items = items.map((item) => ({
+      ...item,
+      ultimoAviso: latestByKey.get(`${item.vehiculoId}:${item.servicioId}`) || null
+    }));
+  } catch (_error) {
+    /* La lista de próximos servicios sigue disponible sin el indicador de aviso. */
+  }
+
+  if (estado === 'Avisado') {
+    items = items.filter((item) => item.ultimoAviso);
+  } else {
+    items = items.filter((item) => !item.ultimoAviso);
+  }
+
   return {
-    items: sortItems(items),
+    items,
     total: items.length
   };
 }

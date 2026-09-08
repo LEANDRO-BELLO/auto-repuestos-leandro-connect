@@ -259,6 +259,7 @@ function renderPageHtml() {
             <option value="Próximo">Próximo</option>
             <option value="Vencido">Vencido</option>
             <option value="En plazo">En plazo</option>
+            <option value="Avisado">Avisado</option>
           </select>
         </div>
       </div>
