@@ -5,6 +5,7 @@ import { mountVehiculosPage, unmountVehiculosPage } from './vehiculos.js';
 import { mountOrdenesPage, unmountOrdenesPage } from './ordenes.js';
 import { mountServiciosRealizadosPage, unmountServiciosRealizadosPage } from './servicios-realizados.js';
 import { mountProximosServiciosPage, unmountProximosServiciosPage } from './proximos-servicios.js';
+import { mountRelatoriosPage, unmountRelatoriosPage } from './relatorios.js';
 import { mountConfiguracionPage, unmountConfiguracionPage } from './configuracion.js';
 import { mountUsuariosPage, unmountUsuariosPage } from './usuarios.js';
 import { abrirHistorialVehiculo } from './historial-vehiculo-qr.js';
@@ -22,6 +23,7 @@ const MENU_ITEMS = [
   { id: 'agendamientos', label: 'Agendamientos', icon: 'calendar', permission: PERMISSIONS.MENU_AGENDAMIENTOS },
   { id: 'servicios', label: 'Servicios Realizados', icon: 'check', permission: PERMISSIONS.MENU_SERVICIOS },
   { id: 'proximos', label: 'Próximos Servicios', icon: 'calendar', permission: PERMISSIONS.MENU_PROXIMOS },
+  { id: 'relatorios', label: 'Reportes', icon: 'clipboard', permission: PERMISSIONS.MENU_REPORTES },
   { id: 'empresa', label: 'Empresa', icon: 'building', permission: PERMISSIONS.MENU_EMPRESA },
   { id: 'config', label: 'Configuración', icon: 'settings', permission: PERMISSIONS.MENU_CONFIG },
   { id: 'usuarios', label: 'Usuarios', icon: 'userCog', permission: PERMISSIONS.MENU_USUARIOS }
@@ -197,6 +199,10 @@ async function navigateTo(pageId, navigationDetail = {}) {
       unmountProximosServiciosPage();
     }
 
+    if (previousPage === 'relatorios' && pageId !== 'relatorios') {
+      unmountRelatoriosPage();
+    }
+
     if (previousPage === 'config' && pageId !== 'config') {
       unmountConfiguracionPage();
     }
@@ -236,6 +242,10 @@ async function navigateTo(pageId, navigationDetail = {}) {
       case 'proximos':
         contentEl.innerHTML = '';
         await mountProximosServiciosPage(contentEl);
+        break;
+      case 'relatorios':
+        contentEl.innerHTML = '';
+        await mountRelatoriosPage(contentEl);
         break;
       case 'config':
         contentEl.innerHTML = '';
