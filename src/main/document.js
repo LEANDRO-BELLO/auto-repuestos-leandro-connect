@@ -47,7 +47,7 @@ async function createDocumentWindow(html) {
   return { docWindow, tempPath };
 }
 
-async function renderHtmlToPdf(html, pageSize = 'A4') {
+async function renderHtmlToPdf(html, pageSize = 'A4', extra = {}) {
   const { docWindow } = await createDocumentWindow(html);
 
   try {
@@ -55,6 +55,10 @@ async function renderHtmlToPdf(html, pageSize = 'A4') {
       printBackground: true,
       margins: { marginType: 'none' }
     };
+
+    if (extra.landscape) {
+      pdfOptions.landscape = true;
+    }
 
     if (typeof pageSize === 'string') {
       pdfOptions.pageSize = pageSize;
@@ -158,7 +162,9 @@ function registerDocumentHandlers() {
         return { ok: false, error: 'No hay contenido para exportar.' };
       }
 
-      const pdfBuffer = await renderHtmlToPdf(html);
+      const pdfBuffer = await renderHtmlToPdf(html, payload.pageSize || 'A4', {
+        landscape: Boolean(payload.landscape)
+      });
       const parentWindow = BrowserWindow.fromWebContents(event.sender);
 
       const { filePath, canceled } = await dialog.showSaveDialog(parentWindow, {
