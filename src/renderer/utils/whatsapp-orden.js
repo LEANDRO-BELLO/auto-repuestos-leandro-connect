@@ -76,6 +76,29 @@ export function buildOrdenWhatsAppMessage({ empresa, cliente, orden, serviciosLa
   return lines.join('\n');
 }
 
+export function buildAvisoProximoWhatsAppMessage({ empresa, item }) {
+  const vehiculo = [item?.vehiculoMarca, item?.vehiculoModelo].filter(Boolean).join(' ') || '—';
+  const estadoTexto = item?.estado === 'Vencido'
+    ? 'está vencido'
+    : item?.estado === 'Próximo'
+      ? 'está próximo a vencer'
+      : 'corresponde realizarlo próximamente';
+
+  const lines = [
+    `Hola${item?.clienteNombre ? ` ${item.clienteNombre}` : ''}!`,
+    '',
+    `Le recordamos que el servicio ${item?.servicioLabel || 'programado'} de su vehículo ${vehiculo} (${item?.vehiculoPlaca || '—'}) ${estadoTexto}.`,
+    item?.fechaVencimiento ? `Fecha de vencimiento: ${formatFecha(item.fechaVencimiento)}` : null,
+    item?.proximoKm !== null && item?.proximoKm !== undefined && item?.proximoKm !== ''
+      ? `Próximo KM: ${formatKm(item.proximoKm)}`
+      : null,
+    '',
+    empresa?.nombre || 'Auto Repuestos Leandro S.A.'
+  ].filter(Boolean);
+
+  return lines.join('\n');
+}
+
 export function buildWhatsAppUrl(phone, message) {
   const normalizedPhone = normalizeWhatsAppPhone(phone);
 

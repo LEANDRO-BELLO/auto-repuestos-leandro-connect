@@ -20,7 +20,8 @@ export const SERVICIOS_CATALOGO = [
   { id: 'pastilla_freno_delantera', label: 'Cambio de pastilla de freno delantera' },
   { id: 'pastilla_freno_trasera', label: 'Cambio de pastilla de freno trasera' },
   { id: 'engrase_crucetas', label: 'Engrase de crucetas' },
-  { id: 'filtro_caja_automatica', label: 'Filtro caja automática' }
+  { id: 'filtro_caja_automatica', label: 'Filtro caja automática' },
+  { id: 'cambio_bateria', label: 'Cambio de batería' }
 ];
 
 export const SERVICIO_ALIASES = {

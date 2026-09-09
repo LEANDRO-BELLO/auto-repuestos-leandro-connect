@@ -33,12 +33,15 @@ const SERVICIOS_CATALOGO = [
   { id: 'pastilla_freno_delantera', label: 'Cambio de pastilla de freno delantera' },
   { id: 'pastilla_freno_trasera', label: 'Cambio de pastilla de freno trasera' },
   { id: 'engrase_crucetas', label: 'Engrase de crucetas' },
-  { id: 'filtro_caja_automatica', label: 'Filtro caja automática' }
+  { id: 'filtro_caja_automatica', label: 'Filtro caja automática' },
+  { id: 'cambio_bateria', label: 'Cambio de batería' }
 ];
 
 const SERVICIO_IDS = new Set(
   SERVICIOS_CATALOGO.map((servicio) => servicio.id)
 );
+
+const CAMBIO_BATERIA_ID = 'cambio_bateria';
 
 async function generateNumeroOs() {
   const row = await get(
@@ -60,6 +63,19 @@ function parseIntOrNull(value) {
 
   const parsed = parseInt(value, 10);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+function parseFechaOrNull(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const text = String(value).trim().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
 function mapOrden(row) {
@@ -148,7 +164,7 @@ async function listOrdenesAbiertasDashboard() {
 
 async function getServiciosByOrden(ordenId) {
   const rows = await all(
-    `SELECT servicio, proximo_km
+    `SELECT servicio, proximo_km, fecha_vencimiento
      FROM ordenes_servicios
      WHERE orden_id = ?
      ORDER BY servicio ASC`,
@@ -157,7 +173,8 @@ async function getServiciosByOrden(ordenId) {
 
   return rows.map((row) => ({
     id: row.servicio,
-    proximoKm: row.proximo_km ?? null
+    proximoKm: row.proximo_km ?? null,
+    fechaVencimiento: parseFechaOrNull(row.fecha_vencimiento)
   }));
 }
 
@@ -171,9 +188,14 @@ async function saveServiciosForOrden(ordenId, servicios = []) {
     const id = typeof item === 'string' ? item : item.id;
 
     const proximoKm =
-      typeof item === 'string'
+      typeof item === 'string' || id === CAMBIO_BATERIA_ID
         ? null
         : parseIntOrNull(item.proximoKm);
+
+    const fechaVencimiento =
+      typeof item !== 'string' && id === CAMBIO_BATERIA_ID
+        ? parseFechaOrNull(item.fechaVencimiento)
+        : null;
 
     if (!SERVICIO_IDS.has(id)) {
       continue;
@@ -181,9 +203,9 @@ async function saveServiciosForOrden(ordenId, servicios = []) {
 
     await run(
       `INSERT INTO ordenes_servicios
-       (orden_id, servicio, proximo_km)
-       VALUES (?, ?, ?)`,
-      [ordenId, id, proximoKm]
+       (orden_id, servicio, proximo_km, fecha_vencimiento)
+       VALUES (?, ?, ?, ?)`,
+      [ordenId, id, proximoKm, fechaVencimiento]
     );
   }
 }
@@ -210,6 +232,13 @@ async function getOrden(id) {
     serviciosRows.map((servicio) => [
       servicio.id,
       servicio.proximoKm
+    ])
+  );
+
+  orden.serviciosFechas = Object.fromEntries(
+    serviciosRows.map((servicio) => [
+      servicio.id,
+      servicio.fechaVencimiento
     ])
   );
 
@@ -253,7 +282,8 @@ async function syncOrdenRailway(orden) {
 
     servicios: serviciosRows.map((servicio) => ({
       servicio: servicio.id,
-      proximo_km: servicio.proximoKm
+      proximo_km: servicio.proximoKm,
+      fecha_vencimiento: servicio.fechaVencimiento || null
     }))
   };
 

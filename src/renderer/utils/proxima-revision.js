@@ -1,6 +1,25 @@
 import { canonicalServicioId, resolveServicioLabel, SERVICIO_ALIASES } from './servicios-labels.js';
 
 const ACEITE_MOTOR_ID = 'aceite_motor';
+const CAMBIO_BATERIA_ID = 'cambio_bateria';
+
+function parseFecha(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const text = String(value).trim().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+}
+
+function fechaForBateria(orden) {
+  const serviciosFechas = orden.serviciosFechas || {};
+  return parseFecha(serviciosFechas[CAMBIO_BATERIA_ID]) || parseFecha(orden.fechaVencimiento);
+}
 
 function parseKm(value) {
   if (value === null || value === undefined || value === '') {
@@ -45,7 +64,7 @@ export function getProximaRevisionItems(orden, catalog) {
   }
 
   for (const servicio of catalog) {
-    if (servicio.id === ACEITE_MOTOR_ID) {
+    if (servicio.id === ACEITE_MOTOR_ID || servicio.id === CAMBIO_BATERIA_ID) {
       continue;
     }
 
@@ -70,7 +89,26 @@ export function getProximaRevisionItems(orden, catalog) {
     });
   }
 
+  const fechaBateria = fechaForBateria(orden);
+
+  if (servicioIds.has(CAMBIO_BATERIA_ID) && fechaBateria) {
+    items.push({
+      id: CAMBIO_BATERIA_ID,
+      label: resolveServicioLabel(CAMBIO_BATERIA_ID, catalog),
+      proximoKm: null,
+      fechaVencimiento: fechaBateria
+    });
+  }
+
   return items;
 }
 
-export { ACEITE_MOTOR_ID };
+export function formatProximaRevisionValue(item, { formatKm, formatFecha }) {
+  if (item?.id === CAMBIO_BATERIA_ID) {
+    return formatFecha(item.fechaVencimiento);
+  }
+
+  return formatKm(item?.proximoKm);
+}
+
+export { ACEITE_MOTOR_ID, CAMBIO_BATERIA_ID };

@@ -1,5 +1,5 @@
 import { escapeHtml } from '../utils/dom.js';
-import { getProximaRevisionItems } from '../utils/proxima-revision.js';
+import { getProximaRevisionItems, formatProximaRevisionValue } from '../utils/proxima-revision.js';
 import { exportOrdenDocumentPdf } from '../utils/orden-document-export.js';
 import { buildOrdenWhatsAppMessage, buildWhatsAppUrl } from '../utils/whatsapp-orden.js';
 import { resolveServicioLabel } from '../utils/servicios-labels.js';
@@ -14,10 +14,14 @@ let selectedVehiculo = null;
 let vehiculoSearchResults = [];
 let selectedServicios = [];
 let selectedServiciosKm = {};
+let selectedServiciosFechas = {};
 let currentOrden = null;
 let currentAgendamientoId = null;
 let currentAgendamiento = null;
 let currentUser = null;
+
+const CAMBIO_BATERIA_ID = 'cambio_bateria';
+const ACEITE_MOTOR_ID = 'aceite_motor';
 
 const SERVICIOS_CON_KM = new Set([
   'aceite_caja_cambio',
@@ -46,7 +50,8 @@ const SERVICIOS_CATALOGO = [
   { id: 'pastilla_freno_delantera', label: 'Cambio de pastilla de freno delantera' },
   { id: 'pastilla_freno_trasera', label: 'Cambio de pastilla de freno trasera' },
   { id: 'engrase_crucetas', label: 'Engrase de crucetas' },
-  { id: 'filtro_caja_automatica', label: 'Filtro caja automática' }
+  { id: 'filtro_caja_automatica', label: 'Filtro caja automática' },
+  { id: 'cambio_bateria', label: 'Cambio de batería' }
 ];
 
 const ESTADO_CLASS = {
@@ -205,6 +210,19 @@ function renderVehiculoSelectOptions() {
   return `<option value="">— Seleccionar vehículo —</option>${options}`;
 }
 
+function toDateInputValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  const text = String(value).trim().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
+}
+
+function getBateriaFechaValue(form) {
+  return form?.querySelector(`#servicio-fecha-${CAMBIO_BATERIA_ID}`)?.value || '';
+}
+
 function renderServicioKmField(servicio, isView) {
   if (!SERVICIOS_CON_KM.has(servicio.id) || isView) {
     return '';
@@ -222,6 +240,26 @@ function renderServicioKmField(servicio, isView) {
         min="0"
         placeholder="0"
         value="${kmValue !== null && kmValue !== undefined && kmValue !== '' ? escapeHtml(String(kmValue)) : ''}"
+      />
+    </div>
+  `;
+}
+
+function renderServicioFechaField(servicio, isView) {
+  if (servicio.id !== CAMBIO_BATERIA_ID || isView) {
+    return '';
+  }
+
+  const checked = selectedServicios.includes(servicio.id);
+  const fechaValue = toDateInputValue(selectedServiciosFechas[servicio.id]);
+
+  return `
+    <div class="ordenes-servicio-km${checked ? '' : ' hidden'}" data-servicio-fecha-for="${servicio.id}">
+      <label for="servicio-fecha-${servicio.id}">Fecha de vencimiento de la batería</label>
+      <input
+        id="servicio-fecha-${servicio.id}"
+        type="date"
+        value="${escapeHtml(fechaValue)}"
       />
     </div>
   `;
@@ -250,7 +288,7 @@ function renderProximaRevisionSection(orden = null) {
         ${items.map((item) => `
           <li>
             <span class="ordenes-revision__label">${escapeHtml(item.label)}:</span>
-            <span class="ordenes-revision__km">${formatKilometraje(item.proximoKm)}</span>
+            <span class="ordenes-revision__km">${formatProximaRevisionValue(item, { formatKm: formatKilometraje, formatFecha })}</span>
           </li>
         `).join('')}
       </ul>
@@ -279,6 +317,7 @@ function renderServiciosSection() {
               <span>${escapeHtml(servicio.label)}</span>
             </label>
             ${renderServicioKmField(servicio, isView)}
+            ${renderServicioFechaField(servicio, isView)}
           </div>
         `).join('')}
       </div>
@@ -439,6 +478,38 @@ function renderPageHtml() {
   `;
 }
 
+function isServicioChecked(id) {
+  if (selectedServicios.includes(id)) {
+    return true;
+  }
+
+  return Boolean(
+    pageRoot?.querySelector(`input[name="servicios"][value="${id}"]`)?.checked
+  );
+}
+
+function isBateriaOnlyMode() {
+  return isServicioChecked(CAMBIO_BATERIA_ID) && !isServicioChecked(ACEITE_MOTOR_ID);
+}
+
+function applyBateriaRules() {
+  const proximoInput = pageRoot?.querySelector('#orden-proximo-km');
+
+  if (!proximoInput || modalMode === 'view') {
+    return;
+  }
+
+  if (!isServicioChecked(CAMBIO_BATERIA_ID)) {
+    return;
+  }
+
+  if (!isServicioChecked(ACEITE_MOTOR_ID)) {
+    proximoInput.value = '';
+    proximoInput.setAttribute('readonly', '');
+    proximoInput.classList.add('ordenes-input--locked');
+  }
+}
+
 function addMonthsIsoDate(months) {
   const date = new Date();
   date.setMonth(date.getMonth() + months);
@@ -482,6 +553,8 @@ function setProximoFechaManualMode(isManual) {
     fechaInput.setAttribute('readonly', '');
     fechaInput.classList.add('ordenes-input--locked');
   }
+
+  applyBateriaRules();
 }
 
 function applyIntervalPreset(preset) {
@@ -492,12 +565,18 @@ function applyIntervalPreset(preset) {
     return;
   }
 
+  if (isBateriaOnlyMode()) {
+    applyBateriaRules();
+    return;
+  }
+
   const km = getKmActualValue();
 
   if (preset === INTERVAL_PRESET.KM_5000_6) {
     proximoInput.value = km + 5000;
     fechaInput.value = addMonthsIsoDate(6);
     setProximoFechaManualMode(false);
+    applyBateriaRules();
     return;
   }
 
@@ -505,20 +584,28 @@ function applyIntervalPreset(preset) {
     proximoInput.value = km + 10000;
     fechaInput.value = addMonthsIsoDate(12);
     setProximoFechaManualMode(false);
+    applyBateriaRules();
     return;
   }
 
   if (preset === INTERVAL_PRESET.PERSONALIZADO) {
     setProximoFechaManualMode(true);
+    applyBateriaRules();
     return;
   }
 
   proximoInput.value = '';
   fechaInput.value = '';
   setProximoFechaManualMode(false);
+  applyBateriaRules();
 }
 
 function updateIntervalFromKmChange() {
+  if (isBateriaOnlyMode()) {
+    applyBateriaRules();
+    return;
+  }
+
   const preset = pageRoot?.querySelector('#orden-intervalo-preset')?.value;
 
   if (preset === INTERVAL_PRESET.KM_5000_6 || preset === INTERVAL_PRESET.KM_10000_12) {
@@ -553,6 +640,7 @@ function syncIntervalPresetUI(orden = null) {
   const preset = orden ? detectIntervalPreset(orden) : presetSelect.value;
   presetSelect.value = preset;
   setProximoFechaManualMode(preset === INTERVAL_PRESET.PERSONALIZADO);
+  applyBateriaRules();
 }
 
 function updateVehiculoSelectedUI() {
@@ -650,6 +738,7 @@ async function loadOrdenes(search = '') {
 
 function collectServicios(form) {
   const mainProximoKm = form.proximoKm?.value ?? null;
+  const bateriaFecha = getBateriaFechaValue(form);
 
   return Array.from(form.querySelectorAll('input[name="servicios"]:checked')).map((el) => {
     const id = el.value;
@@ -657,7 +746,10 @@ function collectServicios(form) {
 
     return {
       id,
-      proximoKm: id === 'aceite_motor' ? mainProximoKm : (kmInput?.value ?? null)
+      proximoKm: id === CAMBIO_BATERIA_ID
+        ? null
+        : (id === ACEITE_MOTOR_ID ? mainProximoKm : (kmInput?.value ?? null)),
+      fechaVencimiento: id === CAMBIO_BATERIA_ID ? (bateriaFecha || null) : null
     };
   });
 }
@@ -679,6 +771,23 @@ function toggleServicioKmField(servicioId, checked) {
   }
 }
 
+function toggleServicioFechaField(servicioId, checked) {
+  const fechaWrap = pageRoot?.querySelector(`[data-servicio-fecha-for="${servicioId}"]`);
+  if (!fechaWrap) {
+    return;
+  }
+
+  fechaWrap.classList.toggle('hidden', !checked);
+
+  if (!checked) {
+    const input = fechaWrap.querySelector('input');
+    if (input) {
+      input.value = '';
+    }
+    delete selectedServiciosFechas[servicioId];
+  }
+}
+
 function handleServicioCheckChange(event) {
   const checkbox = event.target;
   if (checkbox.name !== 'servicios') {
@@ -694,20 +803,48 @@ function handleServicioCheckChange(event) {
   } else {
     selectedServicios = selectedServicios.filter((s) => s !== id);
     delete selectedServiciosKm[id];
+    delete selectedServiciosFechas[id];
   }
 
   toggleServicioKmField(id, checkbox.checked);
+  toggleServicioFechaField(id, checkbox.checked);
+
+  if (isBateriaOnlyMode()) {
+    applyBateriaRules();
+    return;
+  }
+
+  const preset = pageRoot?.querySelector('#orden-intervalo-preset')?.value;
+
+  if (id === ACEITE_MOTOR_ID && checkbox.checked) {
+    if (preset === INTERVAL_PRESET.KM_5000_6 || preset === INTERVAL_PRESET.KM_10000_12) {
+      applyIntervalPreset(preset);
+      return;
+    }
+  }
+
+  if (id === CAMBIO_BATERIA_ID && !checkbox.checked) {
+    if (preset === INTERVAL_PRESET.KM_5000_6 || preset === INTERVAL_PRESET.KM_10000_12) {
+      applyIntervalPreset(preset);
+    } else {
+      setProximoFechaManualMode(preset === INTERVAL_PRESET.PERSONALIZADO);
+    }
+    return;
+  }
+
+  applyBateriaRules();
 }
 
 function buildOrdenData(form, { finalize = false, numeroFactura = null } = {}) {
   const preset = form.intervaloPreset.value;
+  const bateriaOnly = isBateriaOnlyMode();
 
   const data = {
     vehiculoId: selectedVehiculo.id,
     fecha: editingId ? undefined : todayIsoDate(),
     kilometraje: form.kilometraje.value,
-    intervalo: getIntervaloForSave(preset, form.kilometraje.value, form.proximoKm.value),
-    proximoKm: form.proximoKm.value,
+    intervalo: bateriaOnly ? null : getIntervaloForSave(preset, form.kilometraje.value, form.proximoKm.value),
+    proximoKm: bateriaOnly ? '' : form.proximoKm.value,
     fechaVencimiento: form.fechaVencimiento.value,
     estado: finalize ? 'Finalizada' : form.estado.value,
     observaciones: form.observaciones?.value || '',
@@ -925,6 +1062,11 @@ function requestFinalize() {
     return;
   }
 
+  if (isServicioChecked(CAMBIO_BATERIA_ID) && !getBateriaFechaValue(form)) {
+    errorBox.textContent = 'Ingrese la fecha de vencimiento de la batería.';
+    return;
+  }
+
   openFacturaModal();
 }
 
@@ -942,6 +1084,11 @@ async function saveOrdenData({ finalize = false, numeroFactura = null } = {}) {
 
   if (!selectedVehiculo) {
     errorBox.textContent = 'Seleccione un vehículo.';
+    return;
+  }
+
+  if (isServicioChecked(CAMBIO_BATERIA_ID) && !getBateriaFechaValue(form)) {
+    errorBox.textContent = 'Ingrese la fecha de vencimiento de la batería.';
     return;
   }
 
@@ -1061,6 +1208,15 @@ function openModal(orden = null, mode = 'create') {
 
   selectedServicios = orden?.servicios ? [...orden.servicios] : [];
   selectedServiciosKm = orden?.serviciosKm ? { ...orden.serviciosKm } : {};
+  selectedServiciosFechas = orden?.serviciosFechas ? { ...orden.serviciosFechas } : {};
+
+  if (
+    orden?.servicios?.includes(CAMBIO_BATERIA_ID) &&
+    !toDateInputValue(selectedServiciosFechas[CAMBIO_BATERIA_ID]) &&
+    orden.fechaVencimiento
+  ) {
+    selectedServiciosFechas[CAMBIO_BATERIA_ID] = toDateInputValue(orden.fechaVencimiento);
+  }
   vehiculoSearchResults = selectedVehiculo ? [selectedVehiculo] : [];
 
   pageRoot.querySelector('#ordenes-modal')?.remove();
@@ -1081,6 +1237,7 @@ function openModal(orden = null, mode = 'create') {
   updateVehiculoSelectedUI();
   bindFormEvents(form);
   syncIntervalPresetUI(orden);
+  applyBateriaRules();
 
   if (modalMode === 'view') {
     setProximoFechaManualMode(false);
@@ -1103,6 +1260,7 @@ function closeModal() {
   vehiculoSearchResults = [];
   selectedServicios = [];
   selectedServiciosKm = {};
+  selectedServiciosFechas = {};
   pageRoot?.querySelector('#ordenes-modal')?.remove();
 }
 
@@ -1222,6 +1380,7 @@ export function unmountOrdenesPage() {
   vehiculoSearchResults = [];
   selectedServicios = [];
   selectedServiciosKm = {};
+  selectedServiciosFechas = {};
   currentOrden = null;
   currentAgendamientoId = null;
   currentAgendamiento = null;
